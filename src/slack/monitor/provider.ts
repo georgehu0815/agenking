@@ -338,7 +338,11 @@ export async function monitorSlackProvider(opts: MonitorSlackOpts = {}) {
   }
 
   const stopOnAbort = () => {
-    if (opts.abortSignal?.aborted && slackMode === "socket") void app.stop();
+    if (opts.abortSignal?.aborted && slackMode === "socket") {
+      void app.stop().catch(() => {
+        // Ignore errors during shutdown (e.g., AbortError from pending requests)
+      });
+    }
   };
   opts.abortSignal?.addEventListener("abort", stopOnAbort, { once: true });
 

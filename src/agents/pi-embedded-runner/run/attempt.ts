@@ -6,6 +6,8 @@ import type { AssistantMessage, ImageContent } from "@mariozechner/pi-ai";
 import { streamSimple } from "@mariozechner/pi-ai";
 import { createAgentSession, SessionManager, SettingsManager } from "@mariozechner/pi-coding-agent";
 
+import { streamAzureOpenAIManagedIdentity } from "../../azure-openai-stream-adapter.js";
+import { normalizeProviderId } from "../../model-selection.js";
 import { resolveHeartbeatPrompt } from "../../../auto-reply/heartbeat.js";
 import {
   listChannelSupportedActions,
@@ -486,7 +488,20 @@ export async function runEmbeddedAttempt(
       });
 
       // Force a stable streamFn reference so vitest can reliably mock @mariozechner/pi-ai.
-      activeSession.agent.streamFn = streamSimple;
+      // Use custom stream adapter for Azure OpenAI with managed identity
+      const normalizedProvider = normalizeProviderId(params.provider);
+      const providerConfig = params.config?.models?.providers?.[normalizedProvider];
+      const usesAzureManagedIdentity =
+        normalizedProvider === "azureopenai" && providerConfig?.auth === "managedidentity";
+
+      if (usesAzureManagedIdentity) {
+        // Wrap our custom Azure OpenAI stream adapter to match the Pi streamFn signature
+        activeSession.agent.streamFn = (model, context, options) => {
+          return streamAzureOpenAIManagedIdentity(context, options);
+        };
+      } else {
+        activeSession.agent.streamFn = streamSimple;
+      }
 
       applyExtraParamsToAgent(
         activeSession.agent,

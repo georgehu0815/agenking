@@ -4,6 +4,10 @@ export {
 } from "../agents/synthetic-models.js";
 export { VENICE_DEFAULT_MODEL_ID, VENICE_DEFAULT_MODEL_REF } from "../agents/venice-models.js";
 export {
+  AZURE_OPENAI_DEFAULT_MODEL_ID,
+  AZURE_OPENAI_DEFAULT_MODEL_REF,
+} from "../agents/azure-openai-models.js";
+export {
   applyAuthProfileConfig,
   applyKimiCodeConfig,
   applyKimiCodeProviderConfig,
@@ -32,6 +36,10 @@ export {
   applyOpencodeZenConfig,
   applyOpencodeZenProviderConfig,
 } from "./onboard-auth.config-opencode.js";
+export {
+  applyAzureOpenAIConfig,
+  applyAzureOpenAIProviderConfig,
+} from "./onboard-auth.config-azure.js";
 export {
   OPENROUTER_DEFAULT_MODEL_REF,
   setAnthropicApiKey,

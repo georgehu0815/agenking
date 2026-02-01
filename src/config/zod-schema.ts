@@ -188,7 +188,12 @@ export const ClawdbotSchema = z
             z
               .object({
                 provider: z.string(),
-                mode: z.union([z.literal("api_key"), z.literal("oauth"), z.literal("token")]),
+                mode: z.union([
+                  z.literal("api_key"),
+                  z.literal("oauth"),
+                  z.literal("token"),
+                  z.literal("managedidentity"),
+                ]),
                 email: z.string().optional(),
               })
               .strict(),
@@ -320,6 +325,7 @@ export const ClawdbotSchema = z
             basePath: z.string().optional(),
             allowInsecureAuth: z.boolean().optional(),
             dangerouslyDisableDeviceAuth: z.boolean().optional(),
+            openAfterTui: z.boolean().optional(),
           })
           .strict()
           .optional(),

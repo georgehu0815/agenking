@@ -9,16 +9,19 @@ type WarnState = { warned: boolean };
 
 let defaultWarnState: WarnState = { warned: false };
 
-type AnthropicAuthDefaultsMode = "api_key" | "oauth";
+type AnthropicAuthDefaultsMode = "api_key" | "oauth" | "managedidentity";
 
 const DEFAULT_MODEL_ALIASES: Readonly<Record<string, string>> = {
+  // Azure OpenAI (default)
+  gpt: "azureopenai/gpt-5.2",
+
+  // OpenAI
+  "openai-gpt": "openai/gpt-5.2",
+  "gpt-mini": "openai/gpt-5-mini",
+
   // Anthropic (pi-ai catalog uses "latest" ids without date suffix)
   opus: "anthropic/claude-opus-4-5",
   sonnet: "anthropic/claude-sonnet-4-5",
-
-  // OpenAI
-  gpt: "openai/gpt-5.2",
-  "gpt-mini": "openai/gpt-5-mini",
 
   // Google Gemini (3.x are preview ids in the catalog)
   gemini: "google/gemini-3-pro-preview",
@@ -65,6 +68,7 @@ function resolveAnthropicDefaultAuthMode(cfg: ClawdbotConfig): AnthropicAuthDefa
     if (!entry || entry.provider !== "anthropic") continue;
     if (entry.mode === "api_key") return "api_key";
     if (entry.mode === "oauth" || entry.mode === "token") return "oauth";
+    if (entry.mode === "managedidentity") return "managedidentity";
   }
 
   const hasApiKey = anthropicProfiles.some(([, profile]) => profile?.mode === "api_key");
@@ -84,6 +88,12 @@ function resolvePrimaryModelRef(raw?: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   const aliasKey = trimmed.toLowerCase();
+  console.log(
+    "Resolving model ref: - defaults.ts:90",
+    trimmed,
+    "->",
+    DEFAULT_MODEL_ALIASES[aliasKey],
+  );
   return DEFAULT_MODEL_ALIASES[aliasKey] ?? trimmed;
 }
 

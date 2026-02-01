@@ -140,7 +140,9 @@ export async function monitorTelegramProvider(opts: MonitorTelegramOpts = {}) {
     const runner = run(bot, createTelegramRunnerOptions(cfg));
     const stopOnAbort = () => {
       if (opts.abortSignal?.aborted) {
-        void runner.stop();
+        void runner.stop().catch(() => {
+          // Ignore errors during shutdown (e.g., AbortError from pending requests)
+        });
       }
     };
     opts.abortSignal?.addEventListener("abort", stopOnAbort, { once: true });

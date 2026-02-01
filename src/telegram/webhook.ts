@@ -107,7 +107,9 @@ export async function startTelegramWebhook(opts: {
 
   const shutdown = () => {
     server.close();
-    void bot.stop();
+    void bot.stop().catch(() => {
+      // Ignore errors during shutdown (e.g., AbortError from pending requests)
+    });
     if (diagnosticsEnabled) {
       stopDiagnosticHeartbeat();
     }

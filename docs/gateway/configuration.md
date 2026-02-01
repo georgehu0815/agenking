@@ -2842,6 +2842,9 @@ Control UI base path:
   (Tailscale Serve) or `127.0.0.1`.
 - `gateway.controlUi.dangerouslyDisableDeviceAuth` disables device identity checks for the
   Control UI (token/password only). Default: `false`. Break-glass only.
+- `gateway.controlUi.openAfterTui` controls whether the Control UI automatically opens in a
+  browser after running the TUI during onboarding. Default: `true`. Set to `false` if you
+  prefer to manually open the Control UI later.
 
 Related docs:
 - [Control UI](/web/control-ui)

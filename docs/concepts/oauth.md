@@ -50,6 +50,7 @@ Run `claude setup-token` on any machine, then paste it into Clawdbot:
 
 ```bash
 clawdbot models auth setup-token --provider anthropic
+clawdbot models auth setup-token --provider azureopenai
 ```
 
 If you generated the token elsewhere, paste it manually:

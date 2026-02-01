@@ -22,6 +22,17 @@ Search
 clawdhub search "postgres backups"
 ```
 
+mcp-skill v1.0.0  Mcp Skill  (0.481)
+mcporter v1.0.0  Mcporter  (0.462)
+apple-docs-mcp v1.0.0  Apple Docs Mcp  (0.452)
+mcd-cn v1.0.0  McDonald's China  (0.437)
+atlassian-mcp v1.0.0  Atlassian MCP (Jira, Confluence)  (0.431)
+mcporter-skill v1.0.0  mcporter  (0.428)
+clickup-mcp v1.0.0  ClickUp MCP  (0.421)
+microsoft-ads-mcp v1.0.0  Microsoft Ads MCP  (0.413)
+gold-price-mcp v1.0.0  Gold Price Mcp  (0.383)
+openai-docs v1.0.0  OpenAI Developer Docs  (0.360)
+
 Install
 ```bash
 clawdhub install my-skill
@@ -36,6 +47,7 @@ clawdhub update --all
 clawdhub update my-skill --force
 clawdhub update --all --no-input --force
 ```
+pnpm clawdhub list
 
 List
 ```bash

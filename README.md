@@ -97,6 +97,14 @@ pnpm clawdbot onboard --install-daemon
 # Dev loop (auto-reload on TS changes)
 pnpm gateway:watch
 ```
+◇  Existing config detected ───╮
+│                              │
+│  workspace: ~/clawd          │
+│  model: azureopenai/gpt-5.2  │
+│  gateway.mode: local         │
+│  gateway.port: 18789         │
+│  gateway.bind: loopback      │
+│  skills.nodeManager: pnpm  
 
 Note: `pnpm clawdbot ...` runs TypeScript directly (via `tsx`). `pnpm build` produces `dist/` for running via Node / the packaged `clawdbot` binary.
 

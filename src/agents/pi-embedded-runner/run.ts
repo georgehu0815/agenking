@@ -219,10 +219,14 @@ export async function runEmbeddedPiAgent(
         apiKeyInfo = await resolveApiKeyForCandidate(candidate);
         const resolvedProfileId = apiKeyInfo.profileId ?? candidate;
         if (!apiKeyInfo.apiKey) {
-          if (apiKeyInfo.mode !== "aws-sdk") {
+          if (apiKeyInfo.mode !== "aws-sdk" && apiKeyInfo.mode !== "managedidentity") {
             throw new Error(
               `No API key resolved for provider "${model.provider}" (auth mode: ${apiKeyInfo.mode}).`,
             );
+          }
+          // For managed identity mode, set a dummy API key so the Pi library doesn't throw errors
+          if (apiKeyInfo.mode === "managedidentity") {
+            authStorage.setRuntimeApiKey(model.provider, "MANAGED_IDENTITY_PLACEHOLDER");
           }
           lastProfileId = resolvedProfileId;
           return;

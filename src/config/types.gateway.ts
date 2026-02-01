@@ -68,6 +68,8 @@ export type GatewayControlUiConfig = {
   allowInsecureAuth?: boolean;
   /** DANGEROUS: Disable device identity checks for the Control UI (default: false). */
   dangerouslyDisableDeviceAuth?: boolean;
+  /** Open the Control UI in browser after TUI during onboarding (default: true). */
+  openAfterTui?: boolean;
 };
 
 export type GatewayAuthMode = "token" | "password";

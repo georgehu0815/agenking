@@ -388,7 +388,7 @@ Save to `~/.clawdbot/clawdbot.json` and you can DM the bot from that number.
     mode: "local",
     port: 18789,
     bind: "loopback",
-    controlUi: { enabled: true, basePath: "/clawdbot" },
+    controlUi: { enabled: true, basePath: "/clawdbot", openAfterTui: false },
     auth: {
       mode: "token",
       token: "gateway-token",

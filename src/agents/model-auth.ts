@@ -59,7 +59,13 @@ function resolveProviderAuthOverride(
 ): ModelProviderAuthMode | undefined {
   const entry = resolveProviderConfig(cfg, provider);
   const auth = entry?.auth;
-  if (auth === "api-key" || auth === "aws-sdk" || auth === "oauth" || auth === "token") {
+  if (
+    auth === "api-key" ||
+    auth === "aws-sdk" ||
+    auth === "oauth" ||
+    auth === "token" ||
+    auth === "managedidentity"
+  ) {
     return auth;
   }
   return undefined;
@@ -119,11 +125,17 @@ function resolveAwsSdkAuthInfo(): { mode: "aws-sdk"; source: string } {
   return { mode: "aws-sdk", source: "aws-sdk default chain" };
 }
 
+function resolveAzureManagedIdentityAuthInfo(): { mode: "managedidentity"; source: string } {
+  const isProduction = process.env.NODE_ENV === "production";
+  const source = isProduction ? "azure managed identity" : "azure cli credential";
+  return { mode: "managedidentity", source };
+}
+
 export type ResolvedProviderAuth = {
   apiKey?: string;
   profileId?: string;
   source: string;
-  mode: "api-key" | "oauth" | "token" | "aws-sdk";
+  mode: "api-key" | "oauth" | "token" | "aws-sdk" | "managedidentity";
 };
 
 export async function resolveApiKeyForProvider(params: {
@@ -159,6 +171,9 @@ export async function resolveApiKeyForProvider(params: {
   const authOverride = resolveProviderAuthOverride(cfg, provider);
   if (authOverride === "aws-sdk") {
     return resolveAwsSdkAuthInfo();
+  }
+  if (authOverride === "managedidentity") {
+    return resolveAzureManagedIdentityAuthInfo();
   }
 
   const order = resolveAuthProfileOrder({
@@ -206,6 +221,10 @@ export async function resolveApiKeyForProvider(params: {
     return resolveAwsSdkAuthInfo();
   }
 
+  if (authOverride === undefined && normalized === "azureopenai") {
+    return resolveAzureManagedIdentityAuthInfo();
+  }
+
   if (provider === "openai") {
     const hasCodex = listProfilesForProvider(store, "openai-codex").length > 0;
     if (hasCodex) {
@@ -227,7 +246,14 @@ export async function resolveApiKeyForProvider(params: {
 }
 
 export type EnvApiKeyResult = { apiKey: string; source: string };
-export type ModelAuthMode = "api-key" | "oauth" | "token" | "mixed" | "aws-sdk" | "unknown";
+export type ModelAuthMode =
+  | "api-key"
+  | "oauth"
+  | "token"
+  | "mixed"
+  | "aws-sdk"
+  | "managedidentity"
+  | "unknown";
 
 export function resolveEnvApiKey(provider: string): EnvApiKeyResult | null {
   const normalized = normalizeProviderId(provider);
@@ -301,6 +327,7 @@ export function resolveModelAuthMode(
 
   const authOverride = resolveProviderAuthOverride(cfg, resolved);
   if (authOverride === "aws-sdk") return "aws-sdk";
+  if (authOverride === "managedidentity") return "managedidentity";
 
   const authStore = store ?? ensureAuthProfileStore();
   const profiles = listProfilesForProvider(authStore, resolved);
@@ -321,6 +348,10 @@ export function resolveModelAuthMode(
 
   if (authOverride === undefined && normalizeProviderId(resolved) === "amazon-bedrock") {
     return "aws-sdk";
+  }
+
+  if (authOverride === undefined && normalizeProviderId(resolved) === "azureopenai") {
+    return "managedidentity";
   }
 
   const envKey = resolveEnvApiKey(resolved);

@@ -86,7 +86,7 @@ const logRunner = (message) => {
 };
 
 const runNode = () => {
-  const nodeProcess = spawn(process.execPath, ["dist/entry.js", ...args], {
+  const nodeProcess = spawn(process.execPath, ["--experimental-sqlite", "dist/entry.js", ...args], {
     cwd,
     env,
     stdio: "inherit",

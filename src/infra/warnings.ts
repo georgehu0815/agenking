@@ -19,6 +19,12 @@ function shouldIgnoreWarning(warning: Warning): boolean {
   ) {
     return true;
   }
+  if (
+    warning.name === "ExperimentalWarning" &&
+    warning.message?.includes("Importing JSON modules")
+  ) {
+    return true;
+  }
   return false;
 }
 
