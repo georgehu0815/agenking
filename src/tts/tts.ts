@@ -13,6 +13,11 @@ import path from "node:path";
 
 import { completeSimple, type TextContent } from "@mariozechner/pi-ai";
 import { EdgeTTS } from "node-edge-tts";
+import {
+  ManagedIdentityCredential,
+  AzureCliCredential,
+  getBearerTokenProvider,
+} from "@azure/identity";
 
 import type { ReplyPayload } from "../auto-reply/types.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
@@ -48,6 +53,12 @@ const DEFAULT_ELEVENLABS_VOICE_ID = "pMsXgVXv3BLzUgSXRplE";
 const DEFAULT_ELEVENLABS_MODEL_ID = "eleven_multilingual_v2";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-tts";
 const DEFAULT_OPENAI_VOICE = "alloy";
+const DEFAULT_AZURE_OPENAI_ENDPOINT = "https://datacopilothub8882317788.openai.azure.com";
+const DEFAULT_AZURE_OPENAI_DEPLOYMENT = "gpt-4o-mini-tts-3";
+const DEFAULT_AZURE_OPENAI_API_VERSION = "2025-03-01-preview";
+const DEFAULT_AZURE_OPENAI_VOICE = "alloy";
+const AZURE_OPENAI_SCOPE = "https://cognitiveservices.azure.com/.default";
+const DEFAULT_AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID = "c9427d44-98e2-406a-9527-f7fa7059f984";
 const DEFAULT_EDGE_VOICE = "en-US-MichelleNeural";
 const DEFAULT_EDGE_LANG = "en-US";
 const DEFAULT_EDGE_OUTPUT_FORMAT = "audio-24khz-48kbitrate-mono-mp3";
@@ -62,6 +73,7 @@ const DEFAULT_ELEVENLABS_VOICE_SETTINGS = {
 
 const TELEGRAM_OUTPUT = {
   openai: "opus" as const,
+  azureopenai: "opus" as const,
   // ElevenLabs output formats use codec_sample_rate_bitrate naming.
   // Opus @ 48kHz/64kbps is a good voice-note tradeoff for Telegram.
   elevenlabs: "opus_48000_64",
@@ -71,6 +83,7 @@ const TELEGRAM_OUTPUT = {
 
 const DEFAULT_OUTPUT = {
   openai: "mp3" as const,
+  azureopenai: "mp3" as const,
   elevenlabs: "mp3_44100_128",
   extension: ".mp3",
   voiceCompatible: false,
@@ -78,6 +91,7 @@ const DEFAULT_OUTPUT = {
 
 const TELEPHONY_OUTPUT = {
   openai: { format: "pcm" as const, sampleRate: 24000 },
+  azureopenai: { format: "pcm" as const, sampleRate: 24000 },
   elevenlabs: { format: "pcm_22050", sampleRate: 22050 },
 };
 
@@ -110,6 +124,14 @@ export type ResolvedTtsConfig = {
     apiKey?: string;
     model: string;
     voice: string;
+  };
+  azureopenai: {
+    endpoint: string;
+    deployment: string;
+    apiVersion: string;
+    voice: string;
+    useManagedIdentity: boolean;
+    managedIdentityClientId?: string;
   };
   edge: {
     enabled: boolean;
@@ -282,6 +304,16 @@ export function resolveTtsConfig(cfg: ClawdbotConfig): ResolvedTtsConfig {
       apiKey: raw.openai?.apiKey,
       model: raw.openai?.model ?? DEFAULT_OPENAI_MODEL,
       voice: raw.openai?.voice ?? DEFAULT_OPENAI_VOICE,
+    },
+    azureopenai: {
+      endpoint: raw.azureopenai?.endpoint?.trim() || DEFAULT_AZURE_OPENAI_ENDPOINT,
+      deployment: raw.azureopenai?.deployment?.trim() || DEFAULT_AZURE_OPENAI_DEPLOYMENT,
+      apiVersion: raw.azureopenai?.apiVersion?.trim() || DEFAULT_AZURE_OPENAI_API_VERSION,
+      voice: raw.azureopenai?.voice?.trim() || DEFAULT_AZURE_OPENAI_VOICE,
+      useManagedIdentity: raw.azureopenai?.useManagedIdentity ?? true,
+      managedIdentityClientId:
+        raw.azureopenai?.managedIdentityClientId?.trim() ||
+        DEFAULT_AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID,
     },
     edge: {
       enabled: raw.edge?.enabled ?? true,
@@ -474,10 +506,14 @@ export function resolveTtsApiKey(
   if (provider === "openai") {
     return config.openai.apiKey || process.env.OPENAI_API_KEY;
   }
+  if (provider === "azureopenai") {
+    // Azure OpenAI uses managed identity, no API key needed
+    return "managed-identity";
+  }
   return undefined;
 }
 
-export const TTS_PROVIDERS = ["openai", "elevenlabs", "edge"] as const;
+export const TTS_PROVIDERS = ["openai", "azureopenai", "elevenlabs", "edge"] as const;
 
 export function resolveTtsProviderOrder(primary: TtsProvider): TtsProvider[] {
   return [primary, ...TTS_PROVIDERS.filter((provider) => provider !== primary)];
@@ -587,7 +623,12 @@ function parseTtsDirectives(
         switch (key) {
           case "provider":
             if (!policy.allowProvider) break;
-            if (rawValue === "openai" || rawValue === "elevenlabs" || rawValue === "edge") {
+            if (
+              rawValue === "openai" ||
+              rawValue === "azureopenai" ||
+              rawValue === "elevenlabs" ||
+              rawValue === "edge"
+            ) {
               overrides.provider = rawValue;
             } else {
               warnings.push(`unsupported provider "${rawValue}"`);
@@ -1036,6 +1077,78 @@ async function openaiTTS(params: {
   }
 }
 
+async function azureOpenAITTS(params: {
+  text: string;
+  endpoint: string;
+  deployment: string;
+  apiVersion: string;
+  voice: string;
+  responseFormat: "mp3" | "opus" | "pcm";
+  useManagedIdentity: boolean;
+  managedIdentityClientId?: string;
+  timeoutMs: number;
+}): Promise<Buffer> {
+  const {
+    text,
+    endpoint,
+    deployment,
+    apiVersion,
+    voice,
+    responseFormat,
+    useManagedIdentity,
+    managedIdentityClientId,
+    timeoutMs,
+  } = params;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    // Get access token using managed identity
+    let accessToken: string;
+    if (useManagedIdentity) {
+      const credential =
+        process.env.NODE_ENV === "production"
+          ? new ManagedIdentityCredential(
+              managedIdentityClientId ? { clientId: managedIdentityClientId } : undefined,
+            )
+          : new AzureCliCredential();
+
+      const tokenProvider = getBearerTokenProvider(credential, AZURE_OPENAI_SCOPE);
+      accessToken = await tokenProvider();
+    } else {
+      throw new Error("Azure OpenAI TTS requires managed identity authentication");
+    }
+
+    // Build Azure OpenAI TTS URL
+    const url = `${endpoint}/openai/deployments/${deployment}/audio/speech?api-version=${apiVersion}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: deployment,
+        input: text,
+        voice,
+        response_format: responseFormat,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "unknown error");
+      throw new Error(`Azure OpenAI TTS API error (${response.status}): ${errorText}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function inferEdgeExtension(outputFormat: string): string {
   const normalized = outputFormat.toLowerCase();
   if (normalized.includes("webm")) return ".webm";
@@ -1195,6 +1308,18 @@ export async function textToSpeech(params: {
           voiceSettings,
           timeoutMs: config.timeoutMs,
         });
+      } else if (provider === "azureopenai") {
+        audioBuffer = await azureOpenAITTS({
+          text: params.text,
+          endpoint: config.azureopenai.endpoint,
+          deployment: config.azureopenai.deployment,
+          apiVersion: config.azureopenai.apiVersion,
+          voice: config.azureopenai.voice,
+          responseFormat: output.azureopenai,
+          useManagedIdentity: config.azureopenai.useManagedIdentity,
+          managedIdentityClientId: config.azureopenai.managedIdentityClientId,
+          timeoutMs: config.timeoutMs,
+        });
       } else {
         const openaiModelOverride = params.overrides?.openai?.model;
         const openaiVoiceOverride = params.overrides?.openai?.voice;
@@ -1220,7 +1345,12 @@ export async function textToSpeech(params: {
         audioPath,
         latencyMs,
         provider,
-        outputFormat: provider === "openai" ? output.openai : output.elevenlabs,
+        outputFormat:
+          provider === "openai"
+            ? output.openai
+            : provider === "azureopenai"
+              ? output.azureopenai
+              : output.elevenlabs,
         voiceCompatible: output.voiceCompatible,
       };
     } catch (err) {
@@ -1286,6 +1416,30 @@ export async function textToSpeechTelephony(params: {
           applyTextNormalization: config.elevenlabs.applyTextNormalization,
           languageCode: config.elevenlabs.languageCode,
           voiceSettings: config.elevenlabs.voiceSettings,
+          timeoutMs: config.timeoutMs,
+        });
+
+        return {
+          success: true,
+          audioBuffer,
+          latencyMs: Date.now() - providerStart,
+          provider,
+          outputFormat: output.format,
+          sampleRate: output.sampleRate,
+        };
+      }
+
+      if (provider === "azureopenai") {
+        const output = TELEPHONY_OUTPUT.azureopenai;
+        const audioBuffer = await azureOpenAITTS({
+          text: params.text,
+          endpoint: config.azureopenai.endpoint,
+          deployment: config.azureopenai.deployment,
+          apiVersion: config.azureopenai.apiVersion,
+          voice: config.azureopenai.voice,
+          responseFormat: output.format,
+          useManagedIdentity: config.azureopenai.useManagedIdentity,
+          managedIdentityClientId: config.azureopenai.managedIdentityClientId,
           timeoutMs: config.timeoutMs,
         });
 

@@ -1,4 +1,4 @@
-export type TtsProvider = "elevenlabs" | "openai" | "edge";
+export type TtsProvider = "elevenlabs" | "openai" | "azureopenai" | "edge";
 
 export type TtsMode = "final" | "all";
 
@@ -58,6 +58,15 @@ export type TtsConfig = {
     apiKey?: string;
     model?: string;
     voice?: string;
+  };
+  /** Azure OpenAI configuration (uses managed identity). */
+  azureopenai?: {
+    endpoint?: string;
+    deployment?: string;
+    apiVersion?: string;
+    voice?: string;
+    useManagedIdentity?: boolean;
+    managedIdentityClientId?: string;
   };
   /** Microsoft Edge (node-edge-tts) configuration. */
   edge?: {
