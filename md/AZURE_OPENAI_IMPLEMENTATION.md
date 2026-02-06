@@ -103,7 +103,7 @@ export const AZURE_OPENAI_API_VERSION = "2024-12-01-preview";
 
 // Managed Identity configuration
 export const AZURE_OPENAI_SCOPE = "https://cognitiveservices.azure.com/.default";
-export const AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID = "c9427d44-98e2-406a-9527-f7fa7059f984";
+export const AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID = "YOUR-MANAGED-IDENTITY-CLIENT-ID";
 
 // Model catalog
 export const AZURE_OPENAI_MODEL_CATALOG = [

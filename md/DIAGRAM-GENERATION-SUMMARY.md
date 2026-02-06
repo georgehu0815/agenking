@@ -152,7 +152,7 @@ python3 convert-diagrams-to-pdf.py
 ## Technical Implementation
 
 ### Authentication Flow
-- **Production**: ManagedIdentityCredential with client ID c9427d44-98e2-406a-9527-f7fa7059f984
+- **Production**: ManagedIdentityCredential with client ID YOUR-MANAGED-IDENTITY-CLIENT-ID
 - **Development**: AzureCliCredential (uses Azure CLI credentials)
 - **Scope**: https://cognitiveservices.azure.com/.default
 

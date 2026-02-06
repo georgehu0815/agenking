@@ -178,7 +178,7 @@ Update the following values in your configuration based on your Azure OpenAI res
 |-------|-------------|---------|
 | `baseUrl` | Your Azure OpenAI endpoint | `https://your-resource.cognitiveservices.azure.com/` |
 | `deployment` | Your GPT-5.2 deployment name | `gpt-5.2-chat` |
-| `managedIdentityClientID` | User-assigned MI client ID (if applicable) | `c9427d44-98e2-406a-9527-f7fa7059f984` |
+| `managedIdentityClientID` | User-assigned MI client ID (if applicable) | `YOUR-MANAGED-IDENTITY-CLIENT-ID` |
 
 These values are configured in:
 - [src/agents/azure-openai-models.ts](../../src/agents/azure-openai-models.ts) (code defaults)

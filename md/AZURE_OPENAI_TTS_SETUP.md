@@ -26,7 +26,7 @@ pnpm clawdbot config set messages.tts.azureopenai.apiVersion "2025-03-01-preview
 pnpm clawdbot config set messages.tts.azureopenai.voice "alloy"
 
 # Optional: Set managed identity client ID (has a default)
-pnpm clawdbot config set messages.tts.azureopenai.managedIdentityClientId "c9427d44-98e2-406a-9527-f7fa7059f984"
+pnpm clawdbot config set messages.tts.azureopenai.managedIdentityClientId "YOUR-MANAGED-IDENTITY-CLIENT-ID"
 ```
 
 ### Step 2: Configure for Voice-Call Plugin
@@ -88,7 +88,7 @@ When `NODE_ENV` is not production, the system uses `AzureCliCredential`:
         "apiVersion": "2025-03-01-preview",
         "voice": "alloy",
         "useManagedIdentity": true,
-        "managedIdentityClientId": "c9427d44-98e2-406a-9527-f7fa7059f984"
+        "managedIdentityClientId": "YOUR-MANAGED-IDENTITY-CLIENT-ID"
       }
     }
   }

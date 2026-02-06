@@ -76,7 +76,7 @@ The `image` tool allows the AI agent to **analyze and understand images**:
 | **API Version** | `2025-01-01-preview` | Latest Azure OpenAI API |
 | **Endpoint** | `datacopilothub8882317788.cognitiveservices.azure.com` | Your Azure resource |
 | **Deployment** | `gpt-5.2-chat` | Deployment name in Azure |
-| **Managed Identity ID** | `c9427d44-98e2-406a-9527-f7fa7059f984` | Client ID for auth |
+| **Managed Identity ID** | `YOUR-MANAGED-IDENTITY-CLIENT-ID` | Client ID for auth |
 
 ---
 
@@ -269,7 +269,7 @@ pnpm clawdbot models status | grep "Image model"
 3. **Wrong Client ID:**
    Check that the client ID in [src/agents/azure-openai-models.ts](src/agents/azure-openai-models.ts#L9) matches your managed identity:
    ```typescript
-   export const AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID = "c9427d44-98e2-406a-9527-f7fa7059f984";
+   export const AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID = "YOUR-MANAGED-IDENTITY-CLIENT-ID";
    ```
 
    Get your managed identity client ID:
