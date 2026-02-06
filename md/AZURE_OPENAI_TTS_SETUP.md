@@ -18,7 +18,7 @@ Azure OpenAI TTS support with:
 pnpm clawdbot config set messages.tts.provider azureopenai
 
 # Configure Azure OpenAI endpoint and deployment
-pnpm clawdbot config set messages.tts.azureopenai.endpoint "https://datacopilothub8882317788.openai.azure.com"
+pnpm clawdbot config set messages.tts.azureopenai.endpoint "https://YOUR-RESOURCE.openai.azure.com"
 pnpm clawdbot config set messages.tts.azureopenai.deployment "gpt-4o-mini-tts-3"
 pnpm clawdbot config set messages.tts.azureopenai.apiVersion "2025-03-01-preview"
 
@@ -39,7 +39,7 @@ The voice-call plugin can override TTS settings. To use Azure OpenAI for voice c
 
 # Option 2: Override TTS specifically for voice calls
 pnpm clawdbot config set plugins.entries.voice-call.config.tts.provider azureopenai
-pnpm clawdbot config set plugins.entries.voice-call.config.tts.azureopenai.endpoint "https://datacopilothub8882317788.openai.azure.com"
+pnpm clawdbot config set plugins.entries.voice-call.config.tts.azureopenai.endpoint "https://YOUR-RESOURCE.openai.azure.com"
 pnpm clawdbot config set plugins.entries.voice-call.config.tts.azureopenai.deployment "gpt-4o-mini-tts-3"
 pnpm clawdbot config set plugins.entries.voice-call.config.tts.azureopenai.apiVersion "2025-03-01-preview"
 pnpm clawdbot config set plugins.entries.voice-call.config.tts.azureopenai.voice "alloy"
@@ -83,7 +83,7 @@ When `NODE_ENV` is not production, the system uses `AzureCliCredential`:
       "auto": "always",
       "mode": "final",
       "azureopenai": {
-        "endpoint": "https://datacopilothub8882317788.openai.azure.com",
+        "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
         "deployment": "gpt-4o-mini-tts-3",
         "apiVersion": "2025-03-01-preview",
         "voice": "alloy",
@@ -108,7 +108,7 @@ When `NODE_ENV` is not production, the system uses `AzureCliCredential`:
           "tts": {
             "provider": "azureopenai",
             "azureopenai": {
-              "endpoint": "https://datacopilothub8882317788.openai.azure.com",
+              "endpoint": "https://YOUR-RESOURCE.openai.azure.com",
               "deployment": "gpt-4o-mini-tts-3",
               "apiVersion": "2025-03-01-preview",
               "voice": "alloy"

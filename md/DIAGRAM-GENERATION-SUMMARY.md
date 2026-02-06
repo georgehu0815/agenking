@@ -180,7 +180,7 @@ python3 convert-diagrams-to-pdf.py
     "providers": {
       "azureopenai": {
         "auth": "managedidentity",
-        "baseUrl": "https://datacopilothub8882317788.cognitiveservices.azure.com/",
+        "baseUrl": "https://YOUR-RESOURCE.cognitiveservices.azure.com/",
         "api": "openai-completions"
       }
     }

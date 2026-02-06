@@ -38,7 +38,7 @@ The `image` tool allows the AI agent to **analyze and understand images**:
   "models": {
     "providers": {
       "azureopenai": {
-        "baseUrl": "https://datacopilothub8882317788.cognitiveservices.azure.com/",
+        "baseUrl": "https://YOUR-RESOURCE.cognitiveservices.azure.com/",
         "auth": "managedidentity",
         "api": "openai-completions",
         "headers": {
@@ -74,7 +74,7 @@ The `image` tool allows the AI agent to **analyze and understand images**:
 | **Primary Model** | `azureopenai/gpt-5.2` | Default model for all tasks |
 | **Auth Mode** | `managedidentity` | No API key required |
 | **API Version** | `2025-01-01-preview` | Latest Azure OpenAI API |
-| **Endpoint** | `datacopilothub8882317788.cognitiveservices.azure.com` | Your Azure resource |
+| **Endpoint** | `YOUR-RESOURCE.cognitiveservices.azure.com` | Your Azure resource |
 | **Deployment** | `gpt-5.2-chat` | Deployment name in Azure |
 | **Managed Identity ID** | `YOUR-MANAGED-IDENTITY-CLIENT-ID` | Client ID for auth |
 
@@ -144,7 +144,7 @@ cat ~/.clawdbot/clawdbot.json | jq '.models.providers.azureopenai'
 **Expected Output:**
 ```json
 {
-  "baseUrl": "https://datacopilothub8882317788.cognitiveservices.azure.com/",
+  "baseUrl": "https://YOUR-RESOURCE.cognitiveservices.azure.com/",
   "auth": "managedidentity",
   "api": "openai-completions",
   "headers": {
@@ -181,7 +181,7 @@ az account show
 
 # Check if you have access to the Azure OpenAI resource
 az cognitiveservices account show \
-  --name datacopilothub8882317788 \
+  --name YOUR-RESOURCE-NAME \
   --resource-group <your-resource-group>
 ```
 
@@ -292,7 +292,7 @@ export const AZURE_OPENAI_DEPLOYMENT = "gpt-5.2-chat";
 Check your Azure OpenAI deployment:
 ```bash
 az cognitiveservices account deployment list \
-  --name datacopilothub8882317788 \
+  --name YOUR-RESOURCE-NAME \
   --resource-group <your-rg>
 ```
 
@@ -513,7 +513,7 @@ Configuration Complete! 🎉
 ├─────────────────────────────────────────┤
 │ Image Model: azureopenai/gpt-5.2        │
 │ Auth: Managed Identity (no API key)     │
-│ Endpoint: datacopilothub8882317788      │
+│ Endpoint: YOUR-RESOURCE                 │
 │ Deployment: gpt-5.2-chat                │
 │ API Version: 2025-01-01-preview         │
 │ Capabilities: text + image input        │

@@ -48,7 +48,7 @@ This document describes the implementation of Azure OpenAI support in Clawdbot, 
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Azure OpenAI API                              │
-│   endpoint: datacopilothub8882317788.cognitiveservices.azure...│
+│   endpoint: YOUR-RESOURCE.cognitiveservices.azure.com          │
 │   deployment: gpt-5.2-chat                                      │
 │   api-version: 2024-12-01-preview                              │
 └─────────────────────────────────────────────────────────────────┘
@@ -97,7 +97,7 @@ Defines Azure OpenAI configuration constants and model catalog:
 
 ```typescript
 // Azure OpenAI endpoint and deployment
-export const AZURE_OPENAI_ENDPOINT = "https://datacopilothub8882317788...";
+export const AZURE_OPENAI_ENDPOINT = "https://YOUR-RESOURCE.cognitiveservices.azure.com/";
 export const AZURE_OPENAI_DEPLOYMENT = "gpt-5.2-chat";
 export const AZURE_OPENAI_API_VERSION = "2024-12-01-preview";
 

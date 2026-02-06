@@ -32,7 +32,7 @@ launchctl kickstart -k gui/$(id -u)/com.clawdbot.gateway
 
 ```bash
 pnpm clawdbot config set messages.tts.provider azureopenai
-pnpm clawdbot config set messages.tts.azureopenai.endpoint https://datacopilothub8882317788.openai.azure.com
+pnpm clawdbot config set messages.tts.azureopenai.endpoint https://YOUR-RESOURCE.openai.azure.com
 pnpm clawdbot config set messages.tts.azureopenai.deployment gpt-4o-mini-tts-3
 pnpm clawdbot config set messages.tts.azureopenai.apiVersion 2025-03-01-preview
 pnpm clawdbot config set messages.tts.azureopenai.voice alloy
