@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Excalidraw Diagram Renderer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <script type="module">
+        // This will be replaced by the actual diagram data
+        const diagramData = %%DIAGRAM_DATA%%;
+
+        // Calculate actual diagram bounds
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        diagramData.elements.forEach(element => {
+            if (element.isDeleted) return;
+            const x1 = element.x;
+            const y1 = element.y;
+            const x2 = element.x + (element.width || 0);
+            const y2 = element.y + (element.height || 0);
+            minX = Math.min(minX, x1);
+            minY = Math.min(minY, y1);
+            maxX = Math.max(maxX, x2);
+            maxY = Math.max(maxY, y2);
+        });
+
+        // Add padding
+        const padding = 50;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+
+        const width = Math.ceil(maxX - minX);
+        const height = Math.ceil(maxY - minY);
+
+        // Simple SVG rendering based on Excalidraw JSON
+        const container = document.getElementById('canvas-container');
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', width);
+        svg.setAttribute('height', height);
+        svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+        svg.style.background = diagramData.appState.viewBackgroundColor || '#ffffff';
+
+        diagramData.elements.forEach(element => {
+            if (element.isDeleted) return;
+
+            let svgElement;
+
+            if (element.type === 'rectangle') {
+                svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                svgElement.setAttribute('x', element.x);
+                svgElement.setAttribute('y', element.y);
+                svgElement.setAttribute('width', element.width);
+                svgElement.setAttribute('height', element.height);
+                svgElement.setAttribute('rx', element.roundness?.type === 3 ? '8' : '0');
+            } else if (element.type === 'text') {
+                svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                svgElement.setAttribute('x', element.x);
+                svgElement.setAttribute('y', element.y + element.fontSize);
+                svgElement.setAttribute('font-size', element.fontSize);
+                svgElement.setAttribute('font-family', 'Arial, sans-serif');
+                svgElement.setAttribute('text-anchor', element.textAlign === 'center' ? 'middle' : 'start');
+
+                const lines = element.text.split('\n');
+                lines.forEach((line, i) => {
+                    const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                    tspan.textContent = line;
+                    tspan.setAttribute('x', element.x + (element.textAlign === 'center' ? element.width / 2 : 0));
+                    tspan.setAttribute('dy', i === 0 ? '0' : element.fontSize * element.lineHeight);
+                    svgElement.appendChild(tspan);
+                });
+            } else if (element.type === 'arrow') {
+                svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                const [start, end] = element.points;
+                svgElement.setAttribute('x1', element.x + start[0]);
+                svgElement.setAttribute('y1', element.y + start[1]);
+                svgElement.setAttribute('x2', element.x + end[0]);
+                svgElement.setAttribute('y2', element.y + end[1]);
+                svgElement.setAttribute('marker-end', 'url(#arrowhead)');
+            }
+
+            if (svgElement) {
+                svgElement.setAttribute('stroke', element.strokeColor);
+                svgElement.setAttribute('stroke-width', element.strokeWidth);
+                svgElement.setAttribute('fill', element.backgroundColor === 'transparent' ? 'none' : element.backgroundColor);
+                if (element.strokeStyle === 'dashed') {
+                    svgElement.setAttribute('stroke-dasharray', '5,5');
+                }
+                svgElement.setAttribute('opacity', element.opacity / 100);
+                svg.appendChild(svgElement);
+            }
+        });
+
+        // Add arrow marker definition
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead');
+        marker.setAttribute('markerWidth', '10');
+        marker.setAttribute('markerHeight', '10');
+        marker.setAttribute('refX', '9');
+        marker.setAttribute('refY', '3');
+        marker.setAttribute('orient', 'auto');
+        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        polygon.setAttribute('points', '0 0, 10 3, 0 6');
+        polygon.setAttribute('fill', '#000');
+        marker.appendChild(polygon);
+        defs.appendChild(marker);
+        svg.insertBefore(defs, svg.firstChild);
+
+        container.appendChild(svg);
+
+        // Signal that rendering is complete
+        document.title = 'RENDER_COMPLETE';
+    </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+pnpm clawdbot pairing approve telegram E52MH2XJ

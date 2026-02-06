@@ -1,0 +1,20 @@
+#!/bin/bash
+# File Organizer Skill Entrypoint
+# This is the main entrypoint that Clawdbot calls
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Parse JSON input from stdin (Clawdbot passes parameters as JSON)
+if [ -t 0 ]; then
+  # No stdin, use command line args
+  FOLDER="${1:-$HOME/Downloads}"
+  DRY_RUN="${2:-false}"
+else
+  # Read JSON from stdin
+  INPUT=$(cat)
+  FOLDER=$(echo "$INPUT" | jq -r '.folder // "~/Downloads"' 2>/dev/null || echo "$HOME/Downloads")
+  DRY_RUN=$(echo "$INPUT" | jq -r '.dry_run // false' 2>/dev/null || echo "false")
+fi
+
+# Run the organizer script
+"$SCRIPT_DIR/organize.sh" "$FOLDER" "$DRY_RUN"

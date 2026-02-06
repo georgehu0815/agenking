@@ -1,0 +1,21 @@
+{
+  "id": "catalog-mcp-direct",
+  "name": "Catalog MCP (TypeScript Direct)",
+  "description": "Direct TypeScript MCP client for catalog operations. Connects to MCP server via HTTP/SSE without Python intermediary.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "serverUrl": {
+        "type": "string",
+        "description": "MCP server URL (default: http://localhost:3333/sse)",
+        "default": "http://localhost:3333/sse"
+      },
+      "timeout": {
+        "type": "number",
+        "description": "Request timeout in milliseconds",
+        "default": 30000
+      }
+    }
+  }
+}

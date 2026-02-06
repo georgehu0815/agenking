@@ -66,7 +66,11 @@ clawdbot gateway --port 18789 --verbose
 clawdbot message send --to +1234567890 --message "Hello from Clawdbot"
 
 # Talk to the assistant (optionally deliver back to any connected channel: WhatsApp/Telegram/Slack/Discord/Google Chat/Signal/iMessage/BlueBubbles/Microsoft Teams/Matrix/Zalo/Zalo Personal/WebChat)
+
+pnpm clawdbot agent --message "create ~/tmp/test-ghu.txt" --session-id test-debug --local
+
 clawdbot agent --message "Ship checklist" --thinking high
+pnpm clawdbot agent --message "run shell to create file 222.csv under ~/tmp folder" --session-id 111
 ```
 
 Upgrading? [Updating guide](https://docs.clawd.bot/install/updating) (and run `clawdbot doctor`).

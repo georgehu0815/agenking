@@ -175,9 +175,9 @@ Disable cron entirely:
 
 One-shot reminder (UTC ISO, auto-delete after success):
 ```bash
-clawdbot cron add \
+pnpm clawdbot cron add \
   --name "Send reminder" \
-  --at "2026-01-12T18:00:00Z" \
+  --at "2026-02-11T18:00:00Z" \
   --session main \
   --system-event "Reminder: submit expense report." \
   --wake now \

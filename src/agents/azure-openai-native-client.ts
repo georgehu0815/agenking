@@ -60,10 +60,12 @@ export class AzureOpenAINativeClient {
   constructor() {
     if (process.env.NODE_ENV === "production") {
       this.credential = new ManagedIdentityCredential(AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID);
-      console.log("[Native Client] Using ManagedIdentityCredential");
+      console.log(
+        "[Native Client] Using ManagedIdentityCredential - azure-openai-native-client.ts:63",
+      );
     } else {
       this.credential = new AzureCliCredential();
-      console.log("[Native Client] Using AzureCliCredential");
+      console.log("[Native Client] Using AzureCliCredential - azure-openai-native-client.ts:66");
     }
   }
 
@@ -74,7 +76,7 @@ export class AzureOpenAINativeClient {
       this.token = tokenResponse.token;
       // Set expiry to 5 minutes before actual expiry for safety
       this.tokenExpiry = tokenResponse.expiresOnTimestamp - 5 * 60 * 1000;
-      console.log("[Native Client] Token refreshed");
+      console.log("[Native Client] Token refreshed - azure-openai-native-client.ts:77");
     }
     return this.token;
   }
@@ -98,12 +100,19 @@ export class AzureOpenAINativeClient {
 
     if (params.tools && params.tools.length > 0) {
       body.tools = params.tools;
+      // Use "auto" to let model decide when to use tools
+      // This prevents forcing empty arguments when model is uncertain
       body.tool_choice = "auto";
     }
 
-    console.log("[Native Client] Calling Azure OpenAI API");
-    console.log("[Native Client] URL:", url);
-    console.log("[Native Client] Tools count:", params.tools?.length ?? 0);
+    console.log("[Native Client] Calling Azure OpenAI API - azure-openai-native-client.ts:105");
+    console.log("[Native Client] URL: - azure-openai-native-client.ts:106", url);
+    console.log(
+      "[Native Client] Tools count: - azure-openai-native-client.ts:107",
+      params.tools?.length ?? 0,
+    );
+    console.log("[Native Client] Messages being sent:", JSON.stringify(params.messages, null, 2));
+    // console.log("[Native Client] Request body:", JSON.stringify(body, null, 2));
 
     const response = await fetch(url, {
       method: "POST",
@@ -156,7 +165,11 @@ export class AzureOpenAINativeClient {
               const chunk: CompletionChunk = JSON.parse(jsonStr);
               yield chunk;
             } catch (error) {
-              console.error("[Native Client] Failed to parse chunk:", trimmed, error);
+              console.error(
+                "[Native Client] Failed to parse chunk: - azure-openai-native-client.ts:165",
+                trimmed,
+                error,
+              );
             }
           }
         }

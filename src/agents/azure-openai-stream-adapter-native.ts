@@ -14,6 +14,20 @@ export function streamAzureOpenAINative(
 
   (async () => {
     try {
+      // DEBUG: Log context to see what we're receiving
+      console.log(
+        "[Native Adapter] Context keys: - azure-openai-stream-adapter-native.ts:18",
+        Object.keys(context),
+      );
+      console.log(
+        "[Native Adapter] Has systemPrompt? - azure-openai-stream-adapter-native.ts:19",
+        !!context.systemPrompt,
+      );
+      console.log(
+        "[Native Adapter] Messages count: - azure-openai-stream-adapter-native.ts:20",
+        context.messages?.length,
+      );
+
       const client = new AzureOpenAINativeClient();
 
       // Convert Pi context to Azure OpenAI messages
@@ -21,10 +35,18 @@ export function streamAzureOpenAINative(
 
       // Add system prompt if present
       if (context.systemPrompt) {
+        console.log(
+          "[Native Adapter] Adding system prompt: - azure-openai-stream-adapter-native.ts:29",
+          context.systemPrompt.substring(0, 200),
+        );
         messages.push({
           role: "system",
           content: context.systemPrompt,
         });
+      } else {
+        console.log(
+          "[Native Adapter] WARNING: No system prompt found in context! - azure-openai-stream-adapter-native.ts:35",
+        );
       }
 
       // Convert context messages
@@ -90,11 +112,17 @@ export function streamAzureOpenAINative(
           : undefined;
 
       if (tools) {
-        console.log(`[Native Adapter] Binding ${tools.length} tools`);
+        console.log(
+          `[Native Adapter] Binding ${tools.length} tools - azure-openai-stream-adapter-native.ts:101`,
+        );
         console.log(
           "[Native Adapter] Tool names:",
           tools.map((t) => t.function.name),
         );
+        // console.log(
+        //   "[Native Adapter] Full tool definitions:",
+        //   JSON.stringify(tools, null, 2),
+        // );
       }
 
       // Stream completion
@@ -149,6 +177,14 @@ export function streamAzureOpenAINative(
       for await (const chunk of stream) {
         for (const choice of chunk.choices) {
           const delta = choice.delta;
+
+          // DEBUG: Log what Azure OpenAI is returning
+          // if (delta.content || delta.tool_calls) {
+          //   console.log(
+          //     "[Native Adapter] Chunk delta:",
+          //     JSON.stringify({ content: delta.content, tool_calls: delta.tool_calls }, null, 2),
+          //   );
+          // }
 
           // Handle text content
           if (delta.content) {
@@ -391,7 +427,7 @@ export function streamAzureOpenAINative(
       // End the stream
       eventStream.end(finalMessage);
     } catch (error) {
-      console.error("[Native Adapter] Error:", error);
+      console.error("[Native Adapter] Error: - azure-openai-stream-adapter-native.ts:414", error);
       // On error, end with error message
       const errorMessage: AssistantMessage = {
         role: "assistant" as const,

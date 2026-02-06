@@ -1,0 +1,15 @@
+{
+  "name": "@clawdbot/catalog-mcp-direct",
+  "version": "2026.1.25",
+  "type": "module",
+  "description": "Direct TypeScript MCP client for catalog operations (no Python)",
+  "clawdbot": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "eventsource-parser": "^2.0.1"
+  }
+}

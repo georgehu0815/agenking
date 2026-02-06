@@ -1,0 +1,16 @@
+{
+  "id": "catalog-lookup-http",
+  "name": "Catalog Lookup (HTTP/SSE MCP)",
+  "description": "Retrieve catalog item information via HTTP/SSE MCP server. Supports get_catalog_item, get_summary_item, search_catalog, and list_tools operations.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "mcpServerUrl": {
+        "type": "string",
+        "description": "MCP server URL (default: http://localhost:3333/sse)",
+        "default": "http://localhost:3333/sse"
+      }
+    }
+  }
+}
