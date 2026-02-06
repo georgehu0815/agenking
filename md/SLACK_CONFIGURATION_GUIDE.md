@@ -260,8 +260,8 @@ nano ~/.clawdbot/clawdbot.json
     "slack": {
       "enabled": true,
       "mode": "socket",
-      "botToken": "xoxb-1234567890-1234567890-abcdefghijklmnopqrstuvwx",
-      "appToken": "xapp-1-A0XXXXXXXXX-1234567890-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+      "botToken": "xoxb-YOUR-BOT-TOKEN-HERE",
+      "appToken": "xapp-YOUR-APP-TOKEN-HERE",
       "dmPolicy": "pairing",
       "groupPolicy": "allowlist"
     }
