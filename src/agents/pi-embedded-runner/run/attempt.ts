@@ -6,7 +6,7 @@ import type { AssistantMessage, ImageContent } from "@mariozechner/pi-ai";
 import { streamSimple } from "@mariozechner/pi-ai";
 import { createAgentSession, SessionManager, SettingsManager } from "@mariozechner/pi-coding-agent";
 
-import { streamAzureOpenAIManagedIdentity } from "../../azure-openai-stream-adapter.js";
+import { streamAzureOpenAINative } from "../../azure-openai-stream-adapter-native.js";
 import { normalizeProviderId } from "../../model-selection.js";
 import { resolveHeartbeatPrompt } from "../../../auto-reply/heartbeat.js";
 import {
@@ -495,9 +495,9 @@ export async function runEmbeddedAttempt(
         normalizedProvider === "azureopenai" && providerConfig?.auth === "managedidentity";
 
       if (usesAzureManagedIdentity) {
-        // Wrap our custom Azure OpenAI stream adapter to match the Pi streamFn signature
+        // Use native Azure OpenAI stream adapter to fix empty tool arguments bug
         activeSession.agent.streamFn = (model, context, options) => {
-          return streamAzureOpenAIManagedIdentity(context, options);
+          return streamAzureOpenAINative(context, options);
         };
       } else {
         activeSession.agent.streamFn = streamSimple;
