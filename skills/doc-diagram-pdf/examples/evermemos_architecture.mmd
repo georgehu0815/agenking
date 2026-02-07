@@ -1,0 +1,110 @@
+graph TB
+    subgraph user["👤 User Interface"]
+        UserConv["User Conversation"]
+        UserQuery["User Query"]
+        Results["Results to User"]
+    end
+
+    subgraph agentic["① Agentic Layer<br/>Orchestration & Coordination"]
+        MemExtractCoord["Memory Extraction<br/>Coordination"]
+        VectorMgmt["Vectorization<br/>Management"]
+        RetrievalCoord["Retrieval<br/>Orchestration"]
+        RerankEngine["Reranking<br/>Engine"]
+    end
+
+    subgraph memory["② Memory Layer<br/>Memory Extraction & Management"]
+        MemCellExt["MemCell Extractor<br/>(Atomic Units)"]
+        MemExtractor["Memory Extractor<br/>(Higher-level)"]
+        MemClassify["Memory Type<br/>Classification"]
+        Prompts["LLM Prompts<br/>(EN/ZH)"]
+    end
+
+    subgraph retrieval["③ Retrieval Layer<br/>Multi-Modal Search"]
+        direction LR
+        LightMode["Lightweight Mode"]
+        AgenticMode["Agentic Mode"]
+        BM25["BM25 Search<br/>(Keyword)"]
+        VectorSearch["Vector Search<br/>(Semantic)"]
+        RRFFusion["RRF Fusion"]
+        QueryExp["Query Expansion<br/>(LLM)"]
+        MultiRound["Multi-round<br/>Retrieval"]
+    end
+
+    subgraph business["④ Business Layer<br/>Business Logic & Validation"]
+        API["API Endpoints"]
+        Controllers["Controllers"]
+        Service["Service Layer"]
+        DataVal["Data Validation"]
+    end
+
+    subgraph infra["⑤ Infrastructure Layer<br/>External Service Adapters"]
+        MongoDB["MongoDB<br/>(Memory Storage)"]
+        Redis["Redis<br/>(Cache)"]
+        ES["Elasticsearch<br/>(BM25 Index)"]
+        Milvus["Milvus<br/>(Vector DB)"]
+    end
+
+    subgraph core["⑥ Core Framework<br/>Cross-Cutting Concerns"]
+        DI["DI Container"]
+        Lifecycle["Lifecycle<br/>Management"]
+        Middleware["Middleware<br/>Pipeline"]
+        Config["Configuration<br/>Management"]
+    end
+
+    %% Memory Construction Flow (Left Side - Green Path)
+    UserConv -->|Message<br/>Ingestion| API
+    API --> MemExtractCoord
+    MemExtractCoord --> MemCellExt
+    MemCellExt --> MemClassify
+    MemClassify --> VectorMgmt
+    VectorMgmt --> MongoDB
+    MongoDB --> ES
+    MongoDB --> Milvus
+
+    %% Memory Retrieval Flow (Right Side - Cyan Path)
+    UserQuery -->|Query| API
+    API --> RetrievalCoord
+    RetrievalCoord --> LightMode
+    RetrievalCoord --> AgenticMode
+
+    LightMode --> BM25
+    LightMode --> VectorSearch
+    BM25 --> ES
+    VectorSearch --> Milvus
+    BM25 --> RRFFusion
+    VectorSearch --> RRFFusion
+
+    AgenticMode --> QueryExp
+    QueryExp --> MultiRound
+    MultiRound --> ES
+    MultiRound --> Milvus
+
+    RRFFusion --> RerankEngine
+    MultiRound --> RerankEngine
+    RerankEngine --> Results
+
+    %% Supporting connections
+    memory -.->|Uses| Prompts
+    retrieval -.->|Cache| Redis
+    core -.->|Supports| agentic
+    core -.->|Supports| memory
+    core -.->|Supports| retrieval
+    core -.->|Supports| business
+
+    %% Styling
+    classDef userStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px,color:#000
+    classDef agenticStyle fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px,color:#000
+    classDef memoryStyle fill:#fff4e6,stroke:#e67700,stroke-width:2px,color:#000
+    classDef retrievalStyle fill:#c5f6fa,stroke:#0c8599,stroke-width:2px,color:#000
+    classDef businessStyle fill:#e5dbff,stroke:#5f3dc4,stroke-width:2px,color:#000
+    classDef infraStyle fill:#ffe8cc,stroke:#d9480f,stroke-width:2px,color:#000
+    classDef coreStyle fill:#f8f9fa,stroke:#868e96,stroke-width:2px,color:#000
+    classDef dbStyle fill:#ffe3e3,stroke:#c92a2a,stroke-width:2px,color:#000
+
+    class UserConv,UserQuery,Results userStyle
+    class MemExtractCoord,VectorMgmt,RetrievalCoord,RerankEngine agenticStyle
+    class MemCellExt,MemExtractor,MemClassify,Prompts memoryStyle
+    class LightMode,AgenticMode,BM25,VectorSearch,RRFFusion,QueryExp,MultiRound retrievalStyle
+    class API,Controllers,Service,DataVal businessStyle
+    class DI,Lifecycle,Middleware,Config coreStyle
+    class MongoDB,Redis,ES,Milvus infraStyle

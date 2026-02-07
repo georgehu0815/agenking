@@ -1,0 +1,53 @@
+graph TB
+    subgraph user["👤 User Interface"]
+        UserInput["User Input"]
+        UserOutput["User Output"]
+    end
+
+    subgraph orchestration["① Orchestration Layer"]
+        Coordinator["Coordinator"]
+        Manager["Manager"]
+    end
+
+    subgraph business["② Business Layer"]
+        Service["Service Logic"]
+        Validation["Validation"]
+    end
+
+    subgraph data["③ Data Layer"]
+        Repository["Repository"]
+        Cache["Cache"]
+    end
+
+    subgraph infra["④ Infrastructure Layer"]
+        Database["Database"]
+        MessageQueue["Message Queue"]
+        ExternalAPI["External API"]
+    end
+
+    %% Main Flow
+    UserInput --> Coordinator
+    Coordinator --> Service
+    Service --> Repository
+    Repository --> Database
+    Database --> Repository
+    Repository --> Service
+    Service --> UserOutput
+
+    %% Supporting connections
+    Service -.-> Cache
+    Service -.-> ExternalAPI
+    Coordinator -.-> MessageQueue
+
+    %% Styling
+    classDef userStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    classDef orchestrationStyle fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px
+    classDef businessStyle fill:#e5dbff,stroke:#5f3dc4,stroke-width:2px
+    classDef dataStyle fill:#fff4e6,stroke:#e67700,stroke-width:2px
+    classDef infraStyle fill:#ffe8cc,stroke:#d9480f,stroke-width:2px
+
+    class UserInput,UserOutput userStyle
+    class Coordinator,Manager orchestrationStyle
+    class Service,Validation businessStyle
+    class Repository,Cache dataStyle
+    class Database,MessageQueue,ExternalAPI infraStyle
