@@ -121,6 +121,44 @@ export class AzureOpenAINativeClient {
 
     if (!response.ok) {
       const errorText = await response.text();
+
+      // Enhanced error handling for rate limits (429)
+      if (response.status === 429) {
+        let retryAfter = "unknown";
+        let errorDetails = "";
+
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error?.message) {
+            errorDetails = errorJson.error.message;
+            // Extract retry-after from error message if present
+            const retryMatch = errorDetails.match(/retry after (\d+) seconds?/i);
+            if (retryMatch) {
+              retryAfter = retryMatch[1] + "s";
+            }
+          }
+        } catch {
+          // If JSON parsing fails, use raw error text
+          errorDetails = errorText;
+        }
+
+        // Check Retry-After header
+        const retryAfterHeader = response.headers.get("Retry-After");
+        if (retryAfterHeader) {
+          retryAfter = retryAfterHeader + "s";
+        }
+
+        throw new Error(
+          `Azure OpenAI Rate Limit Exceeded (429)\n` +
+            `Deployment: ${AZURE_OPENAI_DEPLOYMENT}\n` +
+            `Endpoint: ${AZURE_OPENAI_ENDPOINT}\n` +
+            `Retry After: ${retryAfter}\n` +
+            `Details: ${errorDetails}\n` +
+            `Tip: Reduce request frequency or upgrade quota at https://aka.ms/oai/quotaincrease`,
+        );
+      }
+
+      // Handle other errors
       throw new Error(
         `Azure OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
       );

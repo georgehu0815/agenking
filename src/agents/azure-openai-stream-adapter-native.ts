@@ -15,18 +15,9 @@ export function streamAzureOpenAINative(
   (async () => {
     try {
       // DEBUG: Log context to see what we're receiving
-      console.log(
-        "[Native Adapter] Context keys: - azure-openai-stream-adapter-native.ts:18",
-        Object.keys(context),
-      );
-      console.log(
-        "[Native Adapter] Has systemPrompt? - azure-openai-stream-adapter-native.ts:19",
-        !!context.systemPrompt,
-      );
-      console.log(
-        "[Native Adapter] Messages count: - azure-openai-stream-adapter-native.ts:20",
-        context.messages?.length,
-      );
+      console.log("[Native Adapter] Context keys:", Object.keys(context));
+      console.log("[Native Adapter] Has systemPrompt?", !!context.systemPrompt);
+      console.log("[Native Adapter] Messages count:", context.messages?.length);
 
       const client = new AzureOpenAINativeClient();
 
@@ -36,7 +27,7 @@ export function streamAzureOpenAINative(
       // Add system prompt if present
       if (context.systemPrompt) {
         console.log(
-          "[Native Adapter] Adding system prompt: - azure-openai-stream-adapter-native.ts:29",
+          "[Native Adapter] Adding system prompt:",
           context.systemPrompt.substring(0, 200),
         );
         messages.push({
@@ -44,9 +35,7 @@ export function streamAzureOpenAINative(
           content: context.systemPrompt,
         });
       } else {
-        console.log(
-          "[Native Adapter] WARNING: No system prompt found in context! - azure-openai-stream-adapter-native.ts:35",
-        );
+        console.log("[Native Adapter] WARNING: No system prompt found in context!");
       }
 
       // Convert context messages
@@ -112,9 +101,7 @@ export function streamAzureOpenAINative(
           : undefined;
 
       if (tools) {
-        console.log(
-          `[Native Adapter] Binding ${tools.length} tools - azure-openai-stream-adapter-native.ts:101`,
-        );
+        console.log(`[Native Adapter] Binding ${tools.length} tools`);
         console.log(
           "[Native Adapter] Tool names:",
           tools.map((t) => t.function.name),
@@ -427,7 +414,22 @@ export function streamAzureOpenAINative(
       // End the stream
       eventStream.end(finalMessage);
     } catch (error) {
-      console.error("[Native Adapter] Error: - azure-openai-stream-adapter-native.ts:414", error);
+      // Enhanced logging for rate limit errors
+      const errorText = error instanceof Error ? error.message : String(error);
+      if (errorText.includes("429") || errorText.includes("Rate Limit")) {
+        console.error("\n - azure-openai-stream-adapter-native.ts:433" + "=".repeat(80));
+        console.error(
+          "⚠️  AZURE OPENAI RATE LIMIT ERROR - azure-openai-stream-adapter-native.ts:434",
+        );
+        console.error("= - azure-openai-stream-adapter-native.ts:435".repeat(80));
+        console.error(
+          "[Native Adapter] Rate limit exceeded - azure-openai-stream-adapter-native.ts:436",
+        );
+        console.error(error);
+        console.error("= - azure-openai-stream-adapter-native.ts:438".repeat(80) + "\n");
+      } else {
+        console.error("[Native Adapter] Error: - azure-openai-stream-adapter-native.ts:440", error);
+      }
       // On error, end with error message
       const errorMessage: AssistantMessage = {
         role: "assistant" as const,

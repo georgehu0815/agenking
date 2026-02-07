@@ -51,7 +51,8 @@ pnpm clawdbot config get channels.telegram.botToken
 
 ### Query Telegram Bot API for updates
 ```bash
-BOT_TOKEN="8305041382:AAGUFibRxJd0fb2lzOzrGQlXMMuqMRcxTJ4"
+# Get bot token from config
+BOT_TOKEN=$(pnpm clawdbot config get channels.telegram.botToken 2>&1 | grep -v '^>')
 curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates" | jq '.'
 ```
 
@@ -65,7 +66,7 @@ pnpm clawdbot config get channels.telegram
 {
   "enabled": true,
   "dmPolicy": "pairing",
-  "botToken": "8305041382:...",
+  "botToken": "YOUR_BOT_TOKEN_HERE",
   "groupPolicy": "allowlist",
   "streamMode": "partial"
 }
