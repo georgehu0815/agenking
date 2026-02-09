@@ -220,6 +220,90 @@ the Gateway likely refused to bind.
 - That’s expected for `bind=lan`: the gateway listens on `0.0.0.0` (all interfaces), and loopback should still connect locally.
 - For remote clients, use a real LAN IP (not `0.0.0.0`) plus the port, and ensure auth is configured.
 
+### Gateway Probe Failed (ECONNREFUSED 127.0.0.1:18789)
+
+**Error message:**
+```
+gateway.probe_failed Gateway probe failed (deep)
+  connect failed: connect ECONNREFUSED 127.0.0.1:18789
+```
+
+**What it means:** The Gateway WebSocket Server (port 18789) is not running or not accepting connections.
+
+**Architecture context:** The Gateway is Layer 2 of the system (Control Plane):
+- WebSocket Server: `ws://127.0.0.1:18789`
+- Chat Run Registry
+- Channel Manager
+- Subsystems
+
+Without the Gateway running, **no messages can be processed** - it's the core of the system.
+
+**Quick diagnosis:**
+```bash
+# Check if anything is listening on port 18789
+lsof -i :18789
+
+# Check gateway status
+clawdbot gateway status
+
+# Check logs
+clawdbot logs --follow
+```
+
+**Common causes:**
+1. **Gateway not started** → Run `clawdbot start`
+2. **Port conflict** → Another process using 18789
+3. **Daemon crashed** → Check logs for errors
+4. **Configuration issue** → Wrong port or missing `gateway.mode=local`
+5. **Firewall blocking** → Check firewall rules
+
+**Quick fix:**
+```bash
+# Stop everything
+clawdbot stop
+
+# Start fresh
+clawdbot start
+
+# Verify it's working
+clawdbot status
+```
+
+**Manual start (for debugging):**
+```bash
+# Start gateway in foreground with verbose logging
+clawdbot gateway --port 18789 --verbose
+```
+
+**Check configuration:**
+```bash
+# Verify gateway mode is set
+clawdbot config get gateway.mode
+
+# Should be "local" for local gateway
+# If not set:
+clawdbot config set gateway.mode local
+```
+
+**Port conflict resolution:**
+```bash
+# See what's using port 18789
+lsof -i :18789
+
+# If needed, use a different port
+clawdbot config set gateway.port 18790
+clawdbot gateway restart
+```
+
+**Verify gateway is reachable:**
+```bash
+# Full diagnostic with deep probes
+clawdbot status --deep
+
+# Gateway discovery + reachability
+clawdbot gateway probe
+```
+
 ### Address Already in Use (Port 18789)
 
 This means something is already listening on the gateway port.

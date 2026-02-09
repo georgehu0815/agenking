@@ -33,12 +33,16 @@ Common commands
 - Drive search: `gog drive search "query" --max 10`
 - Contacts: `gog contacts list --max 20`
 - Sheets get: `gog sheets get <sheetId> "Tab!A1:D10" --json`
+- Sheets create: `gog sheets create bot-sheet`
 - Sheets update: `gog sheets update <sheetId> "Tab!A1:B2" --values-json '[["A","B"],["1","2"]]' --input USER_ENTERED`
 - Sheets append: `gog sheets append <sheetId> "Tab!A:C" --values-json '[["x","y","z"]]' --insert INSERT_ROWS`
 - Sheets clear: `gog sheets clear <sheetId> "Tab!A2:Z"`
 - Sheets metadata: `gog sheets metadata <sheetId> --json`
 - Docs export: `gog docs export <docId> --format txt --out /tmp/doc.txt`
 - Docs cat: `gog docs cat <docId>`
+- Docs create: `gog docs create 2.csv`
+- Drive upload: `gog drive upload ~/tmp/1.txt`
+- Drive list :`gog drive ls`
 
 Calendar Time Format
 - **CRITICAL**: Calendar times MUST use RFC3339 format with timezone: `YYYY-MM-DDTHH:MM:SS±HH:MM`

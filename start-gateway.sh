@@ -70,7 +70,9 @@ pnpm clawdbot config get agents.defaults.model.primary 2>/dev/null || echo "Conf
 echo -e "${YELLOW}Starting gateway in background...${NC}"
 
 # Run gateway with nohup to survive terminal close
-nohup pnpm gateway:watch > "$GATEWAY_LOG" 2> "$GATEWAY_ERR" &
+# nohup pnpm gateway:watch > "$GATEWAY_LOG" 2> "$GATEWAY_ERR" &
+
+nohup pnpm clawdbot gateway --force  > "$GATEWAY_LOG" 2> "$GATEWAY_ERR" &
 
 # Save PID
 GATEWAY_PID=$!

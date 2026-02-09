@@ -14,6 +14,15 @@ A comprehensive guide to creating executable Clawdbot plugins that bridge to Mod
 8. [Complete Example](#complete-example)
 
 ---
+  "markdown-to-pdf": {
+        "enabled": false,
+        "config": {
+          "pdfEngine": "xelatex",
+          "defaultToc": true,
+          "defaultNumberSections": true,
+          "defaultMargin": "1in"
+        }
+      }
 
 ## Overview
 

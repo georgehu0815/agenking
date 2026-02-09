@@ -60,10 +60,12 @@ export class AzureOpenAINativeClient {
   constructor() {
     if (process.env.NODE_ENV === "production") {
       this.credential = new ManagedIdentityCredential(AZURE_OPENAI_MANAGED_IDENTITY_CLIENT_ID);
-      console.log("[Native Client] Using ManagedIdentityCredential");
+      console.log(
+        "[Native Client] Using ManagedIdentityCredential - azure-openai-native-client.ts:63",
+      );
     } else {
       this.credential = new AzureCliCredential();
-      console.log("[Native Client] Using AzureCliCredential - azure-openai-native-client.ts:68");
+      console.log("[Native Client] Using AzureCliCredential - azure-openai-native-client.ts:66");
     }
   }
 
@@ -74,7 +76,7 @@ export class AzureOpenAINativeClient {
       this.token = tokenResponse.token;
       // Set expiry to 5 minutes before actual expiry for safety
       this.tokenExpiry = tokenResponse.expiresOnTimestamp - 5 * 60 * 1000;
-      console.log("[Native Client] Token refreshed - azure-openai-native-client.ts:79");
+      console.log("[Native Client] Token refreshed - azure-openai-native-client.ts:77");
     }
     return this.token;
   }
@@ -103,11 +105,20 @@ export class AzureOpenAINativeClient {
       body.tool_choice = "auto";
     }
 
-    console.log("[Native Client] Calling Azure OpenAI API - azure-openai-native-client.ts:108");
-    console.log("[Native Client] URL: - azure-openai-native-client.ts:109", url);
-    console.log("[Native Client] Tools count:", params.tools?.length ?? 0);
-    //    console.log("[Native Client] Messages being sent:", JSON.stringify(params.messages, null, 2));
-    // console.log("[Native Client] Request body:", JSON.stringify(body, null, 2));
+    console.log("[Native Client] Calling Azure OpenAI API - azure-openai-native-client.ts:106");
+    console.log("[Native Client] URL: - azure-openai-native-client.ts:107", url);
+    console.log(
+      "[Native Client] Tools count: - azure-openai-native-client.ts:108",
+      params.tools?.length ?? 0,
+    );
+    console.log(
+      "[Native Client] Messages being sent: - azure-openai-native-client.ts:109",
+      JSON.stringify(params.messages, null, 2),
+    );
+    console.log(
+      "[Native Client] Request body: - azure-openai-native-client.ts:110",
+      JSON.stringify(body, null, 2),
+    );
 
     const response = await fetch(url, {
       method: "POST",
@@ -118,6 +129,10 @@ export class AzureOpenAINativeClient {
       },
       body: JSON.stringify(body),
     });
+
+    console.log(
+      `[Native Client] ✅ Azure OpenAI API responded  Status: ${response.status} ${response.statusText} - azure-openai-native-client.ts:122`,
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -158,9 +173,32 @@ export class AzureOpenAINativeClient {
         );
       }
 
-      // Handle other errors
+      // Handle other errors (400, 401, 403, 500, etc.)
+      console.error(
+        `\n[Native Client] ❌ Azure OpenAI API Error: ${response.status} ${response.statusText} - azure-openai-native-client.ts:164`,
+      );
+      console.error(
+        `[Native Client] Error response: - azure-openai-native-client.ts:165`,
+        errorText,
+      );
+
+      // Try to parse JSON error for better diagnostics
+      let errorDetails = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error) {
+          errorDetails = JSON.stringify(errorJson.error, null, 2);
+          console.error(
+            `[Native Client] Parsed error details: - azure-openai-native-client.ts:173`,
+            errorDetails,
+          );
+        }
+      } catch {
+        // Not JSON, use raw text
+      }
+
       throw new Error(
-        `Azure OpenAI API error: ${response.status} ${response.statusText}\n${errorText}`,
+        `Azure OpenAI API error: ${response.status} ${response.statusText}\n${errorDetails}`,
       );
     }
 
@@ -171,6 +209,12 @@ export class AzureOpenAINativeClient {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+    const streamStartTime = Date.now();
+    let chunkCount = 0;
+
+    console.log(
+      "[Native Client] 🔄 Starting to stream response... - azure-openai-native-client.ts:194",
+    );
 
     try {
       while (true) {
@@ -196,14 +240,23 @@ export class AzureOpenAINativeClient {
             try {
               const jsonStr = trimmed.slice(6); // Remove "data: " prefix
               const chunk: CompletionChunk = JSON.parse(jsonStr);
+              chunkCount++;
               yield chunk;
             } catch (error) {
-              console.error("[Native Client] Failed to parse chunk:", trimmed, error);
+              console.error(
+                "[Native Client] Failed to parse chunk: - azure-openai-native-client.ts:223",
+                trimmed,
+                error,
+              );
             }
           }
         }
       }
     } finally {
+      const streamDuration = Date.now() - streamStartTime;
+      console.log(
+        `[Native Client] ✅ Streaming complete - Chunks: ${chunkCount}, Duration: ${streamDuration}ms`,
+      );
       reader.releaseLock();
     }
   }

@@ -1,4 +1,4 @@
-# Azure OpenAI - Class Design Diagram (Mermaid)
+# Azure OpenAI Native Client - Class Design Diagram
 
 ```mermaid
 classDiagram
@@ -12,18 +12,23 @@ classDiagram
         +MANAGED_IDENTITY_CLIENT_ID string
     }
 
-    class AzureOpenAIRuntime {
-        <<azure-openai-runtime.ts>>
-        -cachedModel AzureChatOpenAI | null
-        +getAzureOpenAIModelInstance() Promise~AzureChatOpenAI~
-        +clearAzureOpenAICache() void
+    class AzureOpenAINativeClient {
+        <<azure-openai-native-client.ts>>
+        -cachedClient OpenAIClient | null
+        -credential TokenCredential | null
+        +getClientInstance() Promise~OpenAIClient~
+        +selectCredential() TokenCredential
+        +createBearerTokenProvider() Function
+        +clearCache() void
+        -initializeClient() OpenAIClient
     }
 
-    class AzureOpenAIStreamAdapter {
-        <<azure-openai-stream-adapter.ts>>
-        +streamAzureOpenAIManagedIdentity(context, options) AssistantMessageEventStream
-        -convertPiToLangChainMessages(context) Message[]
-        -emitStreamEvents(stream) void
+    class NativeStreamAdapter {
+        <<azure-openai-stream-adapter-native.ts>>
+        +streamAzureOpenAINative(context, options) AssistantMessageEventStream
+        -convertContextToMessages(context) Message[]
+        -handleStreamEvents(stream) void
+        -emitEvents(eventStream, chunk) void
         -handleErrors(error) void
     }
 
@@ -31,12 +36,15 @@ classDiagram
         <<pi-embedded-runner/run/attempt.ts>>
         +detectAzureManagedIdentity(provider, config) boolean
         +swapStreamFunction(session, usesAzure) void
+        -normalizeProviderId(provider) string
+        -getProviderConfig(provider) ProviderConfig
     }
 
     class AuthBypassLogic {
         <<pi-embedded-runner/run.ts & compact.ts>>
         +checkApiKey(apiKeyInfo, mode) void
         +setManagedIdentityPlaceholder(provider) void
+        -validateAuthMode(mode) void
     }
 
     class ConfigurationTypes {
@@ -46,118 +54,245 @@ classDiagram
         +ProviderConfig
     }
 
-    class ExternalDependencies {
-        <<@azure/identity & @langchain/openai>>
+    class AzureIdentity {
+        <<@azure/identity>>
         +ManagedIdentityCredential
         +AzureCliCredential
-        +getBearerTokenProvider
-        +AzureChatOpenAI
-        +Message Types
+        +getBearerTokenProvider()
+    }
+
+    class OpenAIClient {
+        <<@azure/openai>>
+        +AzureOpenAI
+        +chat.completions.create()
+        +streaming support
     }
 
     %% Relationships
-    AzureOpenAIModels ..> AzureOpenAIRuntime : uses
-    AzureOpenAIRuntime --> AzureOpenAIStreamAdapter : calls
-    AzureOpenAIRuntime ..> ExternalDependencies : uses Azure libs
-    AzureOpenAIStreamAdapter ..> ExternalDependencies : uses LangChain
-    PiEmbeddedRunner ..> AzureOpenAIStreamAdapter : swaps to
+    AzureOpenAIModels ..> AzureOpenAINativeClient : uses
+    AzureOpenAINativeClient --> NativeStreamAdapter : provides client
+    AzureOpenAINativeClient ..> AzureIdentity : uses credentials
+    AzureOpenAINativeClient ..> OpenAIClient : creates
+    NativeStreamAdapter ..> OpenAIClient : streams from
+    PiEmbeddedRunner ..> NativeStreamAdapter : swaps to
     PiEmbeddedRunner --> AuthBypassLogic : bypasses
     AuthBypassLogic ..> ConfigurationTypes : reads
-    AzureOpenAIRuntime --> AuthBypassLogic : provides creds
+    AzureOpenAINativeClient --> AuthBypassLogic : provides creds
 
     %% Notes
-    note for AzureOpenAIRuntime "1. Checks cache first\n2. Selects credential (NODE_ENV)\n3. Creates bearer token provider\n4. Initializes AzureChatOpenAI\n5. Caches model instance"
+    note for AzureOpenAINativeClient "Native Client Manager:\n1. Checks cache first\n2. Selects credential\n3. Creates bearer token\n4. Initializes OpenAI client\n5. No LangChain!"
 
-    note for AzureOpenAIStreamAdapter "Process:\n1. Create eventStream\n2. Get model instance\n3. Convert Pi → LangChain messages\n4. Configure model\n5. Stream from LangChain\n6. Emit events\n7. Handle errors"
+    note for NativeStreamAdapter "Stream Handler:\n1. Get native client\n2. Convert to native format\n3. Stream from OpenAI API\n4. Emit Pi events\n5. Direct integration!"
 
-    note for PiEmbeddedRunner "Detection Logic:\nnormalizedProvider === 'azureopenai' &&\nproviderConfig.auth === 'managedidentity'"
+    note for PiEmbeddedRunner "Detection:\nnormalizedProvider === 'azureopenai' &&\nauth === 'managedidentity'"
 
-    note for AuthBypassLogic "Sets MANAGED_IDENTITY_PLACEHOLDER\nwhen mode === 'managedidentity'"
-
-    %% Styling
-    class AzureOpenAIModels {
-        fill:#dbeafe
-        stroke:#1e40af
-    }
-    class AzureOpenAIRuntime {
-        fill:#fffbeb
-        stroke:#f59e0b
-    }
-    class AzureOpenAIStreamAdapter {
-        fill:#f5f3ff
-        stroke:#8b5cf6
-    }
-    class PiEmbeddedRunner {
-        fill:#ecfdf5
-        stroke:#10b981
-    }
-    class AuthBypassLogic {
-        fill:#eff6ff
-        stroke:#3b82f6
-    }
-    class ConfigurationTypes {
-        fill:#eef2ff
-        stroke:#6366f1
-    }
-    class ExternalDependencies {
-        fill:#fee2e2
-        stroke:#dc2626
-    }
+    note for AuthBypassLogic "Bypass:\nSets MANAGED_IDENTITY_PLACEHOLDER\nfor managedidentity mode"
 ```
 
 ## Class Design Overview
 
-This diagram shows the **Azure OpenAI integration class structure** with 7 main components:
+This diagram shows the **Azure OpenAI Native Client class structure** - using direct Azure OpenAI SDK integration **without LangChain**.
 
-### 🔵 Core Classes
+### Core Classes
 
-#### 1. **AzureOpenAIModels** (Constants)
-- Configuration constants for Azure OpenAI endpoint, deployment, API version, scope, and managed identity client ID
+#### 1. AzureOpenAIModels (Constants)
+**File:** `src/agents/azure-openai-models.ts`
 
-#### 2. **AzureOpenAIRuntime** (Runtime Engine)
-- Manages model instance lifecycle with caching
-- Selects credentials based on environment (production/development)
-- Creates bearer token provider and initializes LangChain client
-- **Key Methods:**
-  - `getAzureOpenAIModelInstance()`: Returns cached or new model instance
-  - `clearAzureOpenAICache()`: Clears the cache
+Configuration constants:
+- `AZURE_OPENAI_ENDPOINT`: Azure OpenAI service endpoint
+- `AZURE_OPENAI_DEPLOYMENT`: Model deployment name
+- `AZURE_OPENAI_API_VERSION`: API version (2024-12-01-preview)
+- `AZURE_OPENAI_SCOPE`: OAuth scope for authentication
+- `MANAGED_IDENTITY_CLIENT_ID`: Client ID for managed identity
 
-#### 3. **AzureOpenAIStreamAdapter** (Stream Handler)
-- Main streaming function that bridges Pi and LangChain
-- Converts Pi context to LangChain message types (SystemMessage, HumanMessage, AIMessage, ToolMessage)
-- Emits stream events: start, text_start, text_delta, text_end, done
-- Handles errors gracefully
+---
 
-#### 4. **PiEmbeddedRunner** (Detection & Routing)
-- Detects when Azure Managed Identity should be used
-- Dynamically swaps stream function based on provider configuration
-- **Logic:** If provider is `azureopenai` AND auth is `managedidentity`, use custom stream function
+#### 2. AzureOpenAINativeClient (Native Client Manager)
+**File:** `src/agents/azure-openai-native-client.ts`
 
-#### 5. **AuthBypassLogic** (API Key Bypass)
-- Handles special case where managed identity doesn't need API keys
-- Sets placeholder value when managed identity mode is active
-- Throws errors for modes that require API keys but don't have them
+**Purpose:** Manages native OpenAI client lifecycle without LangChain
 
-#### 6. **ConfigurationTypes** (Type Definitions)
-- TypeScript interfaces for configuration
-- Supports multiple auth modes: `managedidentity`, `api-key`, `aws-sdk`, `oauth`, `token`
+**Key Methods:**
+- `getClientInstance()`: Returns cached or creates new OpenAI client
+- `selectCredential()`: Chooses ManagedIdentity (prod) or AzureCli (dev)
+- `createBearerTokenProvider()`: Converts Azure credential to bearer token
+- `clearCache()`: Clears cache for testing
+- `initializeClient()`: Creates new OpenAI client
 
-#### 7. **ExternalDependencies** (Azure & LangChain Libraries)
-- **@azure/identity:** ManagedIdentityCredential, AzureCliCredential, getBearerTokenProvider
-- **@langchain/openai:** AzureChatOpenAI, Message types
+**Process:**
+1. Check cache
+2. Select credential based on NODE_ENV
+3. Create bearer token provider
+4. Initialize native AzureOpenAI client
+5. Cache and return
 
-### 🔗 Relationships
+---
 
-- **Uses:** Models → Runtime (configuration constants)
-- **Calls:** Runtime → Adapter (gets model instance)
-- **Swaps to:** Runner → Adapter (dynamic function routing)
-- **Bypasses:** Runner → Auth Bypass (skips API key check)
-- **Reads:** Auth Bypass → Config Types (validates auth mode)
-- **Provides creds:** Runtime → Auth Bypass (credential objects)
-- **Uses libs:** Runtime & Adapter → External Dependencies (Azure SDK & LangChain)
+#### 3. NativeStreamAdapter (Stream Handler)
+**File:** `src/agents/azure-openai-stream-adapter-native.ts`
 
-### 📝 Key Flows
+**Purpose:** Adapts native OpenAI streaming to Pi format
 
-1. **Model Instance Creation:** Models → Runtime → External Dependencies
-2. **Stream Execution:** Runner → Adapter → Runtime → External Dependencies
-3. **Auth Handling:** Runner → Auth Bypass → Config Types
+**Key Methods:**
+- `streamAzureOpenAINative()`: Main streaming function
+- `convertContextToMessages()`: Pi → Native OpenAI format
+- `handleStreamEvents()`: Process streaming chunks
+- `emitEvents()`: Emit Pi events
+- `handleErrors()`: Error handling
+
+**Process:**
+1. Create event stream
+2. Get native client
+3. Convert Pi context to native messages
+4. Stream from `chat.completions.create()`
+5. Emit Pi-compatible events
+6. Handle errors
+
+---
+
+#### 4. PiEmbeddedRunner (Detection & Routing)
+**File:** `pi-embedded-runner/run/attempt.ts`
+
+**Purpose:** Detects managed identity and routes to native streaming
+
+**Detection Logic:**
+```typescript
+normalizedProvider = normalizeProviderId(provider)
+providerConfig = config.models.providers[provider]
+usesAzureManagedIdentity =
+  normalizedProvider === 'azureopenai' &&
+  providerConfig.auth === 'managedidentity'
+
+if (usesAzureManagedIdentity) {
+  activeSession.agent.streamFn = streamAzureOpenAINative
+} else {
+  activeSession.agent.streamFn = streamSimple
+}
+```
+
+---
+
+#### 5. AuthBypassLogic (API Key Bypass)
+**File:** `pi-embedded-runner/run.ts` & `compact.ts`
+
+**Purpose:** Bypasses API key requirement for managed identity
+
+**Key Logic:**
+```typescript
+if (!apiKeyInfo.apiKey) {
+  if (mode !== 'aws-sdk' && mode !== 'managedidentity') {
+    throw Error('No API key')
+  }
+
+  if (mode === 'managedidentity') {
+    authStorage.setRuntimeApiKey(
+      provider,
+      'MANAGED_IDENTITY_PLACEHOLDER'
+    )
+  }
+}
+```
+
+---
+
+#### 6. ConfigurationTypes (Type Definitions)
+**Files:** Various type definition files
+
+**Key Types:**
+- `AuthProfileConfig`: { mode, provider }
+- `ModelProviderAuthMode`: 'managedidentity' | 'api-key' | 'aws-sdk' | 'oauth' | 'token'
+- `ProviderConfig`: { auth, baseUrl, api }
+
+---
+
+### External Dependencies
+
+#### 7. AzureIdentity (@azure/identity)
+- `ManagedIdentityCredential(clientId)`: Production auth (no keys!)
+- `AzureCliCredential()`: Development auth (`az login`)
+- `getBearerTokenProvider(credential, scope)`: Token provider
+
+#### 8. OpenAIClient (@azure/openai)
+- `AzureOpenAI(config)`: Native OpenAI client
+- `chat.completions.create()`: Chat API
+- Native streaming support
+- Direct API integration
+
+---
+
+## Key Differences from LangChain
+
+### Removed:
+- `@langchain/openai` dependency
+- `AzureChatOpenAI` wrapper
+- LangChain message types
+- Intermediate conversion layers
+
+### Added:
+- Direct `@azure/openai` SDK usage
+- Native OpenAI message format
+- Simplified architecture
+
+### Benefits:
+- Fewer dependencies
+- Better performance
+- Simpler code
+- Smaller bundle size
+
+---
+
+## Data Flow
+
+```
+User Request
+    ↓
+PiEmbeddedRunner (detects managedidentity)
+    ↓
+NativeStreamAdapter (converts format)
+    ↓
+NativeClient (selects credential)
+    ↓
+AzureIdentity (provides token)
+    ↓
+OpenAIClient (native streaming)
+    ↓
+NativeStreamAdapter (emits events)
+    ↓
+User Response
+```
+
+---
+
+## Authentication
+
+### Production (Managed Identity):
+1. Detect NODE_ENV=production
+2. Create ManagedIdentityCredential(clientId)
+3. Call getBearerTokenProvider(credential, scope)
+4. Initialize AzureOpenAI
+5. No API keys needed!
+
+### Development (Azure CLI):
+1. Detect NODE_ENV=development
+2. Create AzureCliCredential()
+3. Use tokens from `az login`
+4. Call getBearerTokenProvider(credential, scope)
+5. Initialize AzureOpenAI
+
+---
+
+## Configuration Example
+
+```json
+{
+  "models": {
+    "providers": {
+      "azureopenai": {
+        "auth": "managedidentity",
+        "baseUrl": "https://your-instance.openai.azure.com",
+        "api": "2024-12-01-preview"
+      }
+    }
+  }
+}
+```

@@ -1,4 +1,4 @@
-import { DefaultAzureCredential, getBearerTokenProvider } from "@azure/identity";
+// import { DefaultAzureCredential, getBearerTokenProvider } from "@azure/identity";
 import type { ModelDefinitionConfig } from "../config/types.js";
 
 // Azure OpenAI configuration
