@@ -1,0 +1,44 @@
+{
+  "id": "markdown-to-pdf",
+  "uiHints": {
+    "pdfEngine": {
+      "label": "PDF Engine",
+      "help": "LaTeX engine to use: pdflatex (fast), xelatex (Unicode), or lualatex (advanced)",
+      "advanced": true
+    },
+    "defaultToc": {
+      "label": "Generate Table of Contents",
+      "help": "Whether to include a table of contents by default",
+      "advanced": true
+    },
+    "defaultNumberSections": {
+      "label": "Number Sections",
+      "help": "Whether to number section headings by default",
+      "advanced": true
+    },
+    "defaultMargin": {
+      "label": "Default Margin",
+      "help": "Default page margin (e.g., '1in', '2.5cm')",
+      "advanced": true
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "pdfEngine": {
+        "type": "string",
+        "enum": ["pdflatex", "xelatex", "lualatex"]
+      },
+      "defaultToc": {
+        "type": "boolean"
+      },
+      "defaultNumberSections": {
+        "type": "boolean"
+      },
+      "defaultMargin": {
+        "type": "string"
+      }
+    }
+  }
+}

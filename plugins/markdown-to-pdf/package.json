@@ -1,0 +1,23 @@
+{
+  "name": "@clawdbot/markdown-to-pdf",
+  "version": "1.0.0",
+  "description": "Convert markdown files to PDF using Pandoc",
+  "main": "index.ts",
+  "type": "module",
+  "keywords": [
+    "clawdbot-plugin",
+    "markdown",
+    "pdf",
+    "pandoc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "clawdbot": ">=2026.1.0"
+  },
+  "clawdbot": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

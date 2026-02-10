@@ -1,0 +1,107 @@
+classDiagram
+    %% Define classes
+    class AnthropicModels {
+        <<constants>>
+        +ANTHROPIC_API_KEY string
+        +ANTHROPIC_BASE_URL string
+        +ANTHROPIC_API_VERSION string
+        +DEFAULT_MODEL string
+        +SUPPORTED_MODELS string[]
+    }
+
+    class AnthropicAuthManager {
+        <<auth-choice.apply.anthropic.ts>>
+        -tokenProvider string
+        +applyAuthChoiceAnthropic(params) Promise~Result~
+        +validateAnthropicSetupToken(token) boolean
+        +setAnthropicApiKey(key, dir) Promise~void~
+        +buildTokenProfileId(params) string
+        -normalizeApiKeyInput(input) string
+        -formatApiKeyPreview(key) string
+    }
+
+    class AnthropicPayloadLogger {
+        <<anthropic-payload-log.ts>>
+        -writers Map~string, Writer~
+        -config PayloadLogConfig
+        +createAnthropicPayloadLogger(params) Logger | null
+        +wrapStreamFn(streamFn) StreamFn
+        +recordUsage(messages, error) void
+        -isAnthropicModel(model) boolean
+        -findLastAssistantUsage(messages) Usage | null
+        -digest(value) string
+    }
+
+    class StreamAdapter {
+        <<@mariozechner/pi-ai>>
+        +streamSimple(model, context, options) Stream
+        -convertContextToMessages(context) Message[]
+        -handleStreamEvents(stream) void
+        -emitEvents(eventStream, chunk) void
+        -handleErrors(error) void
+    }
+
+    class PiEmbeddedRunner {
+        <<pi-embedded-runner/run/attempt.ts>>
+        +runEmbeddedAttempt(params) Promise~Result~
+        +selectStreamFunction(provider, config) StreamFn
+        -normalizeProviderId(provider) string
+        -getProviderConfig(provider) ProviderConfig
+        -detectAuthMode(provider, config) AuthMode
+    }
+
+    class AuthBypassLogic {
+        <<pi-embedded-runner/run.ts & compact.ts>>
+        +checkApiKey(apiKeyInfo, mode) void
+        +validateAuthMode(mode) void
+        +resolveAuthProfile(provider) AuthProfile
+        -setRuntimeApiKey(provider, key) void
+        -loadTokenCredential(profileId) Credential
+    }
+
+    class ConfigurationTypes {
+        <<interface>>
+        +AuthProfileConfig
+        +ModelProviderAuthMode
+        +ProviderConfig
+        +TokenCredential
+        +PayloadLogConfig
+    }
+
+    class AnthropicSDK {
+        <<@anthropic-ai/sdk>>
+        +Anthropic
+        +messages.create()
+        +messages.stream()
+        +streaming support
+    }
+
+    class AuthProfiles {
+        <<agents/auth-profiles.ts>>
+        +upsertAuthProfile(config) void
+        +loadAuthProfile(profileId) Credential
+        +resolveAuthProfileOrder() Profile[]
+        +TOKEN_PROFILE_PREFIX string
+    }
+
+    %% Relationships
+    AnthropicModels ..> AnthropicAuthManager : uses
+    AnthropicAuthManager --> AuthProfiles : manages profiles
+    AnthropicAuthManager ..> ConfigurationTypes : reads
+    AnthropicPayloadLogger ..> StreamAdapter : wraps
+    PiEmbeddedRunner ..> StreamAdapter : uses default
+    PiEmbeddedRunner --> AnthropicPayloadLogger : wraps if enabled
+    PiEmbeddedRunner --> AuthBypassLogic : validates auth
+    AuthBypassLogic ..> ConfigurationTypes : reads
+    AuthBypassLogic --> AuthProfiles : loads credentials
+    StreamAdapter ..> AnthropicSDK : calls API
+    AnthropicAuthManager --> AuthBypassLogic : provides auth
+
+    %% Notes
+    note for AnthropicAuthManager "Auth Manager:\n1. Validates setup-token\n2. Stores API key\n3. Creates token profile\n4. Supports 3 modes:\n   - api_key\n   - token (setup-token)\n   - oauth"
+
+    note for AnthropicPayloadLogger "Payload Logger:\n1. Wraps streamFn\n2. Logs request payloads\n3. Records usage stats\n4. Creates SHA-256 digest\n5. Optional via env var"
+
+    note for PiEmbeddedRunner "Stream Selection:\nUses streamSimple for Anthropic\n(no custom adapter needed)\nPayload logging optional"
+
+    note for StreamAdapter "Default Stream Handler:\n1. Uses @mariozechner/pi-ai\n2. Converts Pi context\n3. Streams from Anthropic API\n4. Emits Pi events\n5. Standard integration"
