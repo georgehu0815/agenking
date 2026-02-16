@@ -1,0 +1,429 @@
+# Dexter VS Code Extension
+
+AI agent for deep financial research and general Q&A, powered by Claude, integrated directly into Visual Studio Code.
+
+## Features
+
+- 💬 **Chat Interface**: Natural conversation with AI agent in VS Code sidebar
+- 🔄 **Real-time Streaming**: See agent thinking and tool execution in real-time
+- 🛠️ **Tool Execution**: Web search, code analysis, financial research, and more
+- 🎨 **Theme Integration**: Automatically adapts to your VS Code theme
+- 📝 **Chat History**: Persistent conversation history within your workspace
+- ⚙️ **Configurable**: Choose your AI model and customize behavior
+
+## Architecture
+
+This extension reuses **95% of the Dexter web app code**, adapted for VS Code:
+
+```
+Extension Host (Node.js)          Webview (Browser)
+┌─────────────────────┐          ┌──────────────────────┐
+│  extension.ts       │          │  main.tsx            │
+│  ├─ Agent.run()     │◄────────►│  ├─ ChatContainer    │
+│  ├─ Message passing │  Events  │  ├─ MessageList      │
+│  └─ Session mgmt    │          │  └─ InputBox         │
+└─────────────────────┘          └──────────────────────┘
+         │
+         └──► Shared Agent Code (../src/agent/)
+```
+
+**Key Design Decisions:**
+- **SSE → Message Passing**: Replaced HTTP/SSE with VS Code's `postMessage` API
+- **Component Reuse**: All React components from web app work without modification
+- **Agent Integration**: Extension host runs the same Agent class as CLI/web app
+
+## Installation
+
+### Prerequisites
+
+- Node.js 18+ or Bun
+- VS Code 1.85.0 or higher
+- API keys for AI models (OpenAI, Anthropic, etc.) - configured in parent project
+
+### Step 1: Clone and Navigate
+
+```bash
+cd /Users/ghu/aiworker/dexter/dexter-vscode
+```
+
+### Step 2: Install Dependencies
+
+```bash
+npm install
+# or
+bun install
+```
+
+### Step 3: Link to Parent Project's Agent Code
+
+The extension needs access to the main Dexter agent code. Create a symbolic link:
+
+```bash
+# From dexter-vscode directory
+ln -s ../src ./src/agent-parent
+```
+
+**OR** modify [src/extension.ts](src/extension.ts:9) to import from the correct path:
+
+```typescript
+// Change this:
+import { Agent } from '../src/agent/agent.js';
+
+// To this (if using symlink):
+import { Agent } from './agent-parent/agent/agent.js';
+
+// Or use absolute path:
+import { Agent } from '/Users/ghu/aiworker/dexter/src/agent/agent.js';
+```
+
+### Step 4: Build the Extension
+
+```bash
+npm run build
+```
+
+This will:
+1. Build extension host code with esbuild → `out/extension.js`
+2. Build webview code with Vite → `dist/webview.js` and `dist/webview.css`
+
+### Step 5: Test in VS Code
+
+Press **F5** in VS Code to open a new Extension Development Host window with the extension loaded.
+
+### Step 6: Package for Distribution (Optional)
+
+```bash
+npm install -g @vscode/vsce
+npm run package
+```
+
+This creates a `.vsix` file you can install with:
+
+```bash
+code --install-extension dexter-vscode-1.0.0.vsix
+```
+
+## Development Workflow
+
+### Watch Mode for Development
+
+Run both extension and webview in watch mode:
+
+```bash
+npm run dev
+```
+
+This runs:
+- Extension host watcher (esbuild)
+- Webview watcher (Vite)
+
+**After making changes:**
+1. For extension host changes: Press **Ctrl+Shift+F5** (or **Cmd+Shift+F5** on Mac) to reload extension
+2. For webview changes: Use **Developer: Reload Webviews** command in VS Code
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run extension tests only
+npm run test:extension
+
+# Run webview tests only
+npm run test:webview
+
+# Watch mode for webview tests
+npm run test:watch
+```
+
+### Project Structure
+
+```
+dexter-vscode/
+├── src/
+│   ├── extension.ts              # Extension host (Node.js)
+│   ├── shared/
+│   │   └── types.ts              # Shared types between host and webview
+│   └── webview/
+│       ├── main.tsx              # Webview entry point
+│       ├── App.tsx               # Main app component
+│       ├── styles.css            # VS Code-aware styles
+│       ├── types.ts              # Webview-specific types
+│       ├── hooks/
+│       │   ├── useVSCodeMessaging.ts   # VS Code message API (replaces SSE)
+│       │   └── useAgentStream.ts       # Agent streaming logic (adapted)
+│       └── components/
+│           ├── ChatContainer.tsx       # Main chat UI (from web app)
+│           ├── MessageList.tsx         # Message display (from web app)
+│           ├── MessageItem.tsx         # Individual message (from web app)
+│           ├── InputBox.tsx            # User input (from web app)
+│           ├── AnswerBox.tsx           # Answer display (from web app)
+│           ├── EventStream.tsx         # Event visualization (from web app)
+│           ├── ThinkingIndicator.tsx   # Thinking state (from web app)
+│           └── ToolCallView.tsx        # Tool execution view (from web app)
+├── test/
+│   ├── extension.test.ts         # Extension host tests
+│   └── webview/
+│       ├── setup.ts              # Test setup
+│       └── useAgentStream.test.ts # Hook tests
+├── build/
+│   ├── esbuild.extension.js      # Extension build config
+│   └── vite.config.ts            # Webview build config
+├── out/                          # Extension host output
+├── dist/                         # Webview output
+├── package.json                  # Extension manifest
+├── tsconfig.json                 # TypeScript config
+└── README.md                     # This file
+```
+
+## Configuration
+
+### Extension Settings
+
+Open VS Code settings and search for "Dexter":
+
+```json
+{
+  "dexter.model": "gpt-5.2",           // AI model to use
+  "dexter.maxIterations": 10,          // Max agent iterations
+  "dexter.enableDebugLogs": false      // Enable debug logging
+}
+```
+
+### API Keys
+
+API keys are read from the parent Dexter project's `.env` file. Make sure it exists:
+
+```bash
+# In parent directory: /Users/ghu/aiworker/dexter/
+cat .env
+```
+
+Required environment variables:
+```env
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+TAVILY_API_KEY=tvly-...
+EXA_API_KEY=...
+```
+
+## Usage
+
+### Opening the Chat
+
+1. Click the Dexter icon in the Activity Bar (left sidebar)
+2. Or use **Command Palette** (`Cmd+Shift+P`) → "Dexter: Open AI Chat"
+
+### Sending Messages
+
+Type your question in the input box and press **Enter** or click **Send**.
+
+Examples:
+- "What is the current stock price of AAPL?"
+- "Explain this code" (select code first)
+- "Search for recent AI news"
+
+### Canceling Requests
+
+Click the **Cancel** button in the header while a query is processing.
+
+### Clearing History
+
+Click the **Clear** button in the header to clear all messages.
+
+## Testing
+
+### Unit Tests
+
+#### Extension Host Tests ([test/extension.test.ts](test/extension.test.ts))
+
+Tests the Node.js side:
+- Extension activation/deactivation
+- Command registration
+- Message handling
+- Session management
+- Configuration reading
+
+```bash
+npm run test:extension
+```
+
+#### Webview Tests ([test/webview/useAgentStream.test.ts](test/webview/useAgentStream.test.ts))
+
+Tests the React side:
+- Message sending/receiving
+- Event handling
+- State management
+- Error handling
+- VS Code API mocking
+
+```bash
+npm run test:webview
+```
+
+### Integration Testing
+
+1. Build the extension: `npm run build`
+2. Press **F5** to launch Extension Development Host
+3. Open the Dexter chat
+4. Send a test query
+5. Check the Output channel: **View → Output → Dexter AI**
+
+### Manual Testing Checklist
+
+- [ ] Extension activates without errors
+- [ ] Chat view appears in sidebar
+- [ ] Sending a query shows "Processing..." state
+- [ ] Agent events stream in real-time
+- [ ] Final answer displays correctly
+- [ ] Cancel button stops processing
+- [ ] Clear button removes all messages
+- [ ] Theme colors match VS Code theme
+- [ ] Scrolling works correctly
+- [ ] Multiple queries in sequence work
+- [ ] Error messages display properly
+
+## Troubleshooting
+
+### Extension doesn't activate
+
+1. Check Output panel: **View → Output → Dexter AI**
+2. Look for activation errors
+3. Verify all dependencies are installed
+
+### Agent code not found
+
+```
+Error: Cannot find module '../src/agent/agent.js'
+```
+
+**Solution**: Create symlink or update import path (see Step 3 in Installation)
+
+### Webview not loading
+
+1. Check Developer Tools: **Help → Toggle Developer Tools**
+2. Look for errors in Console
+3. Verify `dist/webview.js` and `dist/webview.css` exist
+4. Rebuild: `npm run build:webview`
+
+### API errors
+
+```
+Error: API key not configured
+```
+
+**Solution**: Ensure parent project's `.env` file has required API keys
+
+### Build errors
+
+```
+Cannot find module 'vscode'
+```
+
+**Solution**: The `vscode` module is provided by VS Code at runtime. Don't worry about build-time errors for it in tests.
+
+## Code Reuse Breakdown
+
+| Component | Reuse Level | Changes Made |
+|-----------|-------------|--------------|
+| **UI Components** | | |
+| `ChatContainer.tsx` | 100% | None - exact copy |
+| `MessageList.tsx` | 100% | None - exact copy |
+| `MessageItem.tsx` | 100% | None - exact copy |
+| `InputBox.tsx` | 100% | None - exact copy |
+| `AnswerBox.tsx` | 100% | None - exact copy |
+| `EventStream.tsx` | 100% | None - exact copy |
+| `ThinkingIndicator.tsx` | 100% | None - exact copy |
+| `ToolCallView.tsx` | 100% | None - exact copy |
+| **Hooks** | | |
+| `useAgentStream.ts` | 95% | Replaced SSE with VS Code messaging |
+| **Types** | | |
+| `types.ts` | 100% | Copied from web app |
+| **Styles** | | |
+| `styles.css` | 80% | Added VS Code theme variables |
+| **Agent Logic** | | |
+| `Agent.run()` | 100% | Direct import from parent project |
+
+**Total Code Reuse: ~95%**
+
+## Architecture Decisions
+
+### Why Message Passing instead of HTTP/SSE?
+
+VS Code webviews don't allow external HTTP requests for security. The extension host acts as a proxy:
+
+```
+Web App:     Frontend --HTTP--> Backend --SSE--> Frontend
+VS Code:     Webview --postMessage--> Extension Host --generator--> Webview
+```
+
+### Why Separate Build for Extension and Webview?
+
+- **Extension Host**: Runs in Node.js, needs CommonJS, external `vscode` module
+- **Webview**: Runs in browser, needs ES modules, bundled React
+
+### Why Vite for Webview?
+
+- Fast HMR during development
+- Excellent React/TypeScript support
+- Outputs browser-compatible bundles
+- Good CSS/asset handling
+
+### Why esbuild for Extension?
+
+- Very fast builds
+- Good TypeScript support
+- Native ESM/CommonJS conversion
+- Small output size
+
+## Contributing
+
+### Adding New Features
+
+1. **Add to web app first**: Develop features in the web app (`src/web/client/`)
+2. **Copy to extension**: Copy updated components to `src/webview/components/`
+3. **Test**: Run tests and manual testing
+4. **Update docs**: Update this README
+
+### Code Style
+
+- Use TypeScript for type safety
+- Follow existing component patterns
+- Add JSDoc comments for complex functions
+- Keep components small and focused
+
+## License
+
+Same as parent Dexter project.
+
+## Support
+
+For issues specific to the VS Code extension, please include:
+- VS Code version
+- Extension version
+- Output from "Dexter AI" channel
+- Browser console errors (from Developer Tools)
+
+## Roadmap
+
+- [ ] Inline chat (ask questions about selected code)
+- [ ] Code actions (right-click → Ask Dexter)
+- [ ] Workspace indexing (RAG over your codebase)
+- [ ] Multi-turn conversations with memory
+- [ ] Export chat to markdown
+- [ ] Dark/light theme toggle
+- [ ] Keyboard shortcuts customization
+- [ ] Settings UI in webview
+
+## Changelog
+
+### 1.0.0 (Initial Release)
+
+- ✅ Complete chat interface in sidebar
+- ✅ Real-time agent streaming
+- ✅ Tool execution visualization
+- ✅ Theme integration
+- ✅ Configuration support
+- ✅ Comprehensive tests
+- ✅ Full documentation

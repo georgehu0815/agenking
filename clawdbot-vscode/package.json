@@ -1,0 +1,154 @@
+{
+  "name": "clawdbot-vscode-ws",
+  "displayName": "clawdbot AI Assistant",
+  "description": "AI agent as workmate",
+  "version": "1.0.0",
+  "type": "module",
+  "publisher": "georgehu",
+  "repository": "https://github.com/georgehu/dexter",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "assistant",
+    "claude",
+    "financial",
+    "research",
+    "chat"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.cjs",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dexter.openChat",
+        "title": "Dexter: Open AI Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "dexter.clearHistory",
+        "title": "Dexter: Clear Chat History"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dexter-sidebar",
+          "title": "Dexter AI",
+          "icon": "resources/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "dexter-sidebar": [
+        {
+          "type": "webview",
+          "id": "dexter.chatView",
+          "name": "Chat"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Dexter AI",
+      "properties": {
+        "dexter.agentMode": {
+          "type": "string",
+          "enum": ["direct", "gateway"],
+          "default": "gateway",
+          "description": "Agent mode: 'direct' for lightweight agent with direct Azure calls, 'gateway' for full skill system via HTTP gateway"
+        },
+        "dexter.gatewayUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "HTTP Gateway URL (only used in gateway mode)"
+        },
+        "dexter.model": {
+          "type": "string",
+          "default": "gpt-5.2",
+          "description": "AI model to use (e.g., gpt-5.2, claude-3-opus-20240229)"
+        },
+        "dexter.maxIterations": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of agent iterations"
+        },
+        "dexter.enableDebugLogs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging to VS Code output channel"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run build:extension && npm run build:webview",
+    "build:extension": "node build/esbuild.extension.js",
+    "build:webview": "vite build",
+    "watch": "concurrently \"npm run watch:extension\" \"npm run watch:webview\"",
+    "watch:extension": "node build/esbuild.extension.js --watch",
+    "watch:webview": "vite build --watch",
+    "dev": "npm run watch",
+    "test": "npm run test:extension && npm run test:webview",
+    "test:extension": "node --import tsx --test test/**/*.test.ts",
+    "test:webview": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext ts,tsx",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^1.1.3",
+    "@langchain/core": "^1.1.0",
+    "@langchain/exa": "^1.0.1",
+    "@langchain/google-genai": "^2.0.0",
+    "@langchain/ollama": "^1.0.3",
+    "@langchain/openai": "^1.1.3",
+    "@langchain/tavily": "^1.0.1",
+    "@mozilla/readability": "^0.6.0",
+    "dotenv": "^17.2.3",
+    "exa-js": "^2.2.0",
+    "gray-matter": "^4.0.3",
+    "linkedom": "^0.18.12",
+    "playwright": "^1.52.0",
+    "ws": "^8.18.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^20.x",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.10",
+    "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/ui": "^1.3.1",
+    "@vscode/test-electron": "^2.4.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.39.1",
+    "jsdom": "^24.0.0",
+    "postcss": "^8.4.32",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^1.3.1"
+  }
+}
