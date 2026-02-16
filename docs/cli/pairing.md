@@ -16,5 +16,7 @@ Related:
 ```bash
 clawdbot pairing list whatsapp
 clawdbot pairing approve whatsapp <code> --notify
+pnpm clawdbot pairing approve telegram xxxxx
+pnpm clawdbot pairing list telegram
 ```
 

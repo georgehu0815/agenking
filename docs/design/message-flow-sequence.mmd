@@ -1,0 +1,95 @@
+sequenceDiagram
+    participant UI as Web UI<br/>(Control UI)
+    participant GW as HTTP Gateway<br/>(Port 18789)
+    participant Auth as Authentication<br/>& Pairing
+    participant Router as Message<br/>Router
+    participant Agent as Agent<br/>System
+    participant Tools as Tools &<br/>Skills
+    participant LLM as LLM<br/>Provider
+
+    %% Phase 1: Connection & Authentication
+    rect rgb(230, 245, 255)
+        Note over UI,Auth: Phase 1: Connection & Handshake
+        UI->>+GW: WebSocket Connect
+        GW->>UI: Connection Established + Challenge Nonce
+
+        UI->>GW: Connect Frame<br/>{auth, device ID, client info}
+        GW->>+Auth: Validate Credentials
+        Auth->>Auth: Check Token/Password
+        Auth->>Auth: Verify Device Identity
+        Auth-->>-GW: Auth Result + Device Token
+
+        GW->>UI: Hello-OK<br/>{snapshot, features, policy}
+        Note over UI,GW: Connection ready, streaming events
+    end
+
+    %% Phase 2: Message Send
+    rect rgb(211, 249, 216)
+        Note over UI,Agent: Phase 2: User Message Send
+        UI->>+GW: Request Frame<br/>{method:"agent", params:{message, sessionKey}}
+
+        GW->>+Router: Route Request
+        Router->>Router: Resolve Session Key
+        Router->>Router: Resolve Agent ID
+        Router->>Router: Generate Run ID
+        Router-->>-GW: Run ID + Agent Config
+
+        GW->>UI: Response ACK<br/>{runId, status:"accepted"}
+
+        GW->>+Agent: Queue Agent Job<br/>{runId, message, context}
+        Note over GW,Agent: Job queued, async processing starts
+    end
+
+    %% Phase 3: Agent Processing
+    rect rgb(229, 219, 255)
+        Note over Agent,LLM: Phase 3: Agent Processing
+        Agent->>Agent: Load Conversation History
+        Agent->>Agent: Build Context<br/>(system prompt, tools, memory)
+
+        Agent->>UI: Event: agent.start<br/>{phase:"start", runId}
+
+        Agent->>+LLM: Send Prompt<br/>{messages, tools, config}
+        LLM-->>Agent: Stream Response Start
+
+        Agent->>UI: Event: agent.stream<br/>{text chunk}
+        LLM-->>Agent: Text Chunk
+        Agent->>UI: Event: agent.stream<br/>{text chunk}
+
+        Note over Agent,LLM: LLM requests tool execution
+        LLM-->>-Agent: Tool Use Request<br/>{tool:"Bash", args:{command}}
+    end
+
+    %% Phase 4: Tool Execution
+    rect rgb(255, 232, 204)
+        Note over Agent,Tools: Phase 4: Tool Execution
+        Agent->>+Tools: Parse Tool Call
+        Tools->>Tools: Validate Tool Policy
+        Tools->>Tools: Check Permissions
+
+        Agent->>UI: Event: agent.tool<br/>{tool:"Bash", status:"executing"}
+
+        Tools->>Tools: Execute Tool<br/>(Bash command)
+        Tools-->>-Agent: Tool Result<br/>{stdout, exitCode}
+
+        Agent->>UI: Event: agent.tool<br/>{tool:"Bash", status:"completed", result}
+
+        Agent->>+LLM: Send Tool Result
+        LLM-->>Agent: Final Response Stream
+        Agent->>UI: Event: agent.stream<br/>{text chunk}
+        LLM-->>-Agent: Response Complete
+    end
+
+    %% Phase 5: Completion
+    rect rgb(255, 228, 230)
+        Note over Agent,UI: Phase 5: Response Completion
+        Agent->>Agent: Save to History
+        Agent->>Agent: Update Session State
+
+        Agent->>UI: Event: agent.end<br/>{phase:"end", runId, summary}
+        Agent-->>-GW: Job Complete
+
+        GW->>-UI: Response Frame<br/>{runId, status:"ok", final:true}
+
+        Note over UI: Display complete response to user
+    end
+

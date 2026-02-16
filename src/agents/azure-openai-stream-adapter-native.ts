@@ -1,6 +1,7 @@
 import type { Context, SimpleStreamOptions, AssistantMessage } from "@mariozechner/pi-ai";
 import { AssistantMessageEventStream } from "@mariozechner/pi-ai/dist/utils/event-stream.js";
 import { AzureOpenAINativeClient, type Message, type Tool } from "./azure-openai-native-client.js";
+import { stripEnvelopeFromMessages } from "../gateway/chat-sanitize.js";
 
 /**
  * Native Azure OpenAI stream adapter that bypasses LangChain
@@ -15,18 +16,9 @@ export function streamAzureOpenAINative(
   (async () => {
     try {
       // DEBUG: Log context to see what we're receiving
-      console.log(
-        "[Native Adapter] Context keys: - azure-openai-stream-adapter-native.ts:18",
-        Object.keys(context),
-      );
-      console.log(
-        "[Native Adapter] Has systemPrompt? - azure-openai-stream-adapter-native.ts:19",
-        !!context.systemPrompt,
-      );
-      console.log(
-        "[Native Adapter] Messages count: - azure-openai-stream-adapter-native.ts:20",
-        context.messages?.length,
-      );
+      console.log("[Native Adapter] Context keys:", Object.keys(context));
+      console.log("[Native Adapter] Has systemPrompt?", !!context.systemPrompt);
+      console.log("[Native Adapter] Messages count:", context.messages?.length);
 
       const client = new AzureOpenAINativeClient();
 
@@ -44,9 +36,7 @@ export function streamAzureOpenAINative(
           content: context.systemPrompt,
         });
       } else {
-        console.log(
-          "[Native Adapter] WARNING: No system prompt found in context! - azure-openai-stream-adapter-native.ts:38",
-        );
+        console.log("[Native Adapter] WARNING: No system prompt found in context!");
       }
 
       // Convert context messages
@@ -98,6 +88,9 @@ export function streamAzureOpenAINative(
         }
       }
 
+      // Sanitize messages to remove envelope headers and message_id hints
+      const sanitizedMessages = stripEnvelopeFromMessages(messages) as Message[];
+
       // Convert Pi tools to Azure OpenAI format
       const tools: Tool[] | undefined =
         context.tools && context.tools.length > 0
@@ -112,9 +105,7 @@ export function streamAzureOpenAINative(
           : undefined;
 
       if (tools) {
-        console.log(
-          `[Native Adapter] Binding ${tools.length} tools - azure-openai-stream-adapter-native.ts:104`,
-        );
+        console.log(`[Native Adapter] Binding ${tools.length} tools`);
         console.log(
           "[Native Adapter] Tool names:",
           tools.map((t) => t.function.name),
@@ -127,7 +118,7 @@ export function streamAzureOpenAINative(
 
       // Stream completion
       const stream = client.streamChatCompletion({
-        messages,
+        messages: sanitizedMessages,
         tools,
         temperature: options?.temperature,
         maxTokens: options?.maxTokens,
@@ -432,14 +423,18 @@ export function streamAzureOpenAINative(
       // Enhanced logging for rate limit errors
       const errorText = error instanceof Error ? error.message : String(error);
       if (errorText.includes("429") || errorText.includes("Rate Limit")) {
-        console.error("\n - azure-openai-stream-adapter-native.ts:420" + "=".repeat(80));
-        console.error("⚠️  AZURE OPENAI RATE LIMIT ERROR");
-        console.error("= - azure-openai-stream-adapter-native.ts:424".repeat(80));
-        console.error("[Native Adapter] Rate limit exceeded");
+        console.error("\n - azure-openai-stream-adapter-native.ts:439" + "=".repeat(80));
+        console.error(
+          "⚠️  AZURE OPENAI RATE LIMIT ERROR - azure-openai-stream-adapter-native.ts:440",
+        );
+        console.error("= - azure-openai-stream-adapter-native.ts:441".repeat(80));
+        console.error(
+          "[Native Adapter] Rate limit exceeded - azure-openai-stream-adapter-native.ts:442",
+        );
         console.error(error);
-        console.error("= - azure-openai-stream-adapter-native.ts:429".repeat(80) + "\n");
+        console.error("= - azure-openai-stream-adapter-native.ts:444".repeat(80) + "\n");
       } else {
-        console.error("[Native Adapter] Error: - azure-openai-stream-adapter-native.ts:431", error);
+        console.error("[Native Adapter] Error: - azure-openai-stream-adapter-native.ts:446", error);
       }
       // On error, end with error message
       const errorMessage: AssistantMessage = {
@@ -469,8 +464,14 @@ export function streamAzureOpenAINative(
     }
   })().catch((err) => {
     // Catch any unhandled errors from the async IIFE to prevent process exit
-    console.error("[Native Adapter] Unhandled error in stream adapter:", err);
-    console.error("[Native Adapter] Error stack:", err instanceof Error ? err.stack : "No stack");
+    console.error(
+      "[Native Adapter] Unhandled error in stream adapter: - azure-openai-stream-adapter-native.ts:476",
+      err,
+    );
+    console.error(
+      "[Native Adapter] Error stack: - azure-openai-stream-adapter-native.ts:477",
+      err instanceof Error ? err.stack : "No stack",
+    );
     // Don't re-throw - the stream has already been ended above
     // This prevents "ELIFECYCLE Command failed with exit code 1"
   });

@@ -1,0 +1,134 @@
+graph TB
+    subgraph input["Message Sources"]
+        User[User Message]
+        WebUI[Web UI Client]
+        API[HTTP API Call]
+        Channel[Chat Platform<br/>WhatsApp/Telegram/etc]
+    end
+
+    subgraph gateway["Gateway Router"]
+        direction TB
+        MessageReceiver[Message Receiver]
+        SessionKeyResolver[Session Key Resolver]
+
+        subgraph routing["Routing Logic"]
+            direction LR
+            ExplicitKey{Explicit<br/>sessionKey?}
+            ChannelRouter{From Chat<br/>Channel?}
+            DefaultMain[Use 'main'<br/>session]
+        end
+    end
+
+    subgraph config["Configuration Store"]
+        AgentsConfig["agents.list[]<br/>Configuration"]
+        WorkspaceMap["Session → Agent<br/>Mapping"]
+        RoutingRules["Channel Routing<br/>Rules"]
+    end
+
+    subgraph agents["Agent Workspaces"]
+        direction TB
+
+        subgraph main["Main Agent"]
+            MainAgent[Agent ID: main<br/>Workspace: ~/clawd]
+            MainConfig[System Prompt<br/>Tool Policy<br/>Model Config]
+            MainIdentity[Identity:<br/>Name: Clawd<br/>Theme: helpful assistant]
+        end
+
+        subgraph work["Work Agent"]
+            WorkAgent[Agent ID: work<br/>Workspace: ~/clawd-work]
+            WorkConfig[System Prompt<br/>Tool Policy<br/>Model Config]
+            WorkIdentity[Identity:<br/>Name: Work Assistant<br/>Theme: professional]
+        end
+
+        subgraph personal["Personal Agent"]
+            PersonalAgent[Agent ID: personal<br/>Workspace: ~/clawd-personal]
+            PersonalConfig[System Prompt<br/>Tool Policy<br/>Model Config]
+            PersonalIdentity[Identity:<br/>Name: Personal AI<br/>Theme: casual]
+        end
+    end
+
+    subgraph execution["Execution Context"]
+        direction TB
+        ContextBuilder[Build Agent Context]
+        HistoryLoader[Load Session History]
+        ToolPolicyLoader[Apply Tool Policy]
+        AgentExecutor[Execute with Agent Config]
+    end
+
+    subgraph response["Response Routing"]
+        ResponseFormatter[Format Response]
+        IdentityInjector[Add Agent Identity]
+        ChannelAdapter[Channel Adapter]
+        ResponseSender[Send to Client]
+    end
+
+    %% Input flow
+    User --> MessageReceiver
+    WebUI -->|sessionKey: work| MessageReceiver
+    API -->|sessionKey in body| MessageReceiver
+    Channel -->|channel: whatsapp| MessageReceiver
+
+    %% Routing logic
+    MessageReceiver --> SessionKeyResolver
+    SessionKeyResolver --> ExplicitKey
+
+    ExplicitKey -->|Yes| WorkspaceMap
+    ExplicitKey -->|No| ChannelRouter
+    ChannelRouter -->|Yes| RoutingRules
+    ChannelRouter -->|No| DefaultMain
+
+    %% Config lookup
+    WorkspaceMap --> AgentsConfig
+    RoutingRules --> AgentsConfig
+    DefaultMain --> AgentsConfig
+
+    %% Agent selection
+    AgentsConfig -->|sessionKey: main| MainAgent
+    AgentsConfig -->|sessionKey: work| WorkAgent
+    AgentsConfig -->|sessionKey: personal| PersonalAgent
+
+    %% Agent context
+    MainAgent --> ContextBuilder
+    WorkAgent --> ContextBuilder
+    PersonalAgent --> ContextBuilder
+
+    MainConfig --> ContextBuilder
+    WorkConfig --> ContextBuilder
+    PersonalConfig --> ContextBuilder
+
+    %% Execution
+    ContextBuilder --> HistoryLoader
+    HistoryLoader --> ToolPolicyLoader
+    ToolPolicyLoader --> AgentExecutor
+
+    %% Response
+    AgentExecutor --> ResponseFormatter
+
+    MainIdentity --> IdentityInjector
+    WorkIdentity --> IdentityInjector
+    PersonalIdentity --> IdentityInjector
+
+    ResponseFormatter --> IdentityInjector
+    IdentityInjector --> ChannelAdapter
+    ChannelAdapter --> ResponseSender
+
+    ResponseSender -->|WebSocket| WebUI
+    ResponseSender -->|HTTP| API
+    ResponseSender -->|Platform API| Channel
+
+    %% Styling
+    classDef inputStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    classDef gatewayStyle fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px
+    classDef configStyle fill:#fff4e6,stroke:#e67700,stroke-width:2px
+    classDef agentStyle fill:#e5dbff,stroke:#5f3dc4,stroke-width:2px
+    classDef executionStyle fill:#ffe8cc,stroke:#d9480f,stroke-width:2px
+    classDef responseStyle fill:#c5f6fa,stroke:#0c8599,stroke-width:2px
+    classDef decisionStyle fill:#ffe3e3,stroke:#c92a2a,stroke-width:2px
+
+    class User,WebUI,API,Channel inputStyle
+    class MessageReceiver,SessionKeyResolver gatewayStyle
+    class ExplicitKey,ChannelRouter decisionStyle
+    class AgentsConfig,WorkspaceMap,RoutingRules,DefaultMain configStyle
+    class MainAgent,WorkAgent,PersonalAgent,MainConfig,WorkConfig,PersonalConfig,MainIdentity,WorkIdentity,PersonalIdentity agentStyle
+    class ContextBuilder,HistoryLoader,ToolPolicyLoader,AgentExecutor executionStyle
+    class ResponseFormatter,IdentityInjector,ChannelAdapter,ResponseSender responseStyle

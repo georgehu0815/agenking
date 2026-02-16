@@ -1,0 +1,156 @@
+graph TB
+    subgraph client["Client Layer"]
+        direction TB
+        TUI[Terminal UI - TUI<br/>Interactive Shell Interface]
+        CLI[CLI Commands<br/>clawdbot agent/message/etc]
+        MacApp[macOS App<br/>Native Client]
+    end
+
+    subgraph gateway["Gateway Service (Port 18789)"]
+        direction TB
+        WSServer[WebSocket Server<br/>Real-time Communication]
+        HTTPServer[HTTP Server<br/>REST APIs]
+
+        subgraph wshandlers["WebSocket Handlers"]
+            ConnHandler[Connection Handler<br/>Handshake & Auth]
+            MsgHandler[Message Handler<br/>Frame Processing]
+            EventEmitter[Event Emitter<br/>Server Push]
+        end
+
+        subgraph httphandlers["HTTP Handlers"]
+            OpenResponsesAPI[OpenResponses API<br/>/v1/responses]
+            ToolsAPI[Tools API<br/>/tools/invoke]
+            OpenAIAPI[OpenAI API<br/>/openai/v1/chat/completions]
+        end
+    end
+
+    subgraph backend["Backend Services"]
+        direction TB
+
+        subgraph agentservice["Agent Service"]
+            direction LR
+            AgentCmd[Agent Command<br/>Handler]
+            AgentRunner[Pi Agent Runner<br/>Execution Engine]
+            AgentQueue[Job Queue<br/>Async Processing]
+        end
+
+        subgraph sessionservice["Session Service"]
+            SessionStore[Session Store<br/>Conversation History]
+            SessionResolver[Session Resolver<br/>Multi-Agent Routing]
+            ContextBuilder[Context Builder<br/>History + Memory]
+        end
+
+        subgraph toolservice["Tools & Skills Service"]
+            direction LR
+            ToolRegistry[Tool Registry<br/>Built-in + Custom]
+            PolicyEngine[Policy Engine<br/>Authorization]
+            ToolExecutor[Tool Executor<br/>Sandboxed Execution]
+        end
+
+        subgraph skillservice["Skills System"]
+            direction LR
+            SkillLoader[Skill Loader<br/>Plugin Discovery]
+            SkillRunner[Skill Runner<br/>Execution]
+            MCPAdapter[MCP Adapter<br/>External Tools]
+        end
+    end
+
+    subgraph storage["Storage Layer"]
+        direction TB
+        SQLite[(SQLite DB<br/>Sessions/History)]
+        FileSystem[(File System<br/>Workspaces/Config)]
+        VectorDB[(Vector DB<br/>Memory/RAG)]
+    end
+
+    subgraph external["External Services"]
+        direction TB
+        LLMProviders[LLM Providers<br/>Anthropic/OpenAI/etc]
+        MCPServers[MCP Servers<br/>External Resources]
+        Channels[Chat Platforms<br/>WhatsApp/Telegram/etc]
+    end
+
+    subgraph monitoring["Monitoring & Observability"]
+        direction LR
+        HealthCheck[Health Check<br/>Service Status]
+        Logger[Logger<br/>Structured Logging]
+        Metrics[Metrics<br/>Performance Tracking]
+    end
+
+    %% Client to Gateway connections
+    TUI -->|WebSocket<br/>Bi-directional| WSServer
+    CLI -->|HTTP<br/>One-shot| HTTPServer
+    MacApp -->|WebSocket<br/>Bi-directional| WSServer
+
+    %% Gateway internal connections
+    WSServer --> ConnHandler
+    WSServer --> MsgHandler
+    WSServer --> EventEmitter
+
+    HTTPServer --> OpenResponsesAPI
+    HTTPServer --> ToolsAPI
+    HTTPServer --> OpenAIAPI
+
+    %% Gateway to Backend
+    ConnHandler -->|Authenticate| SessionResolver
+    MsgHandler -->|Route Message| AgentCmd
+    EventEmitter -.->|Stream Events| TUI
+
+    OpenResponsesAPI --> AgentCmd
+    ToolsAPI --> ToolRegistry
+    OpenAIAPI --> AgentCmd
+
+    %% Agent Service flow
+    AgentCmd --> AgentQueue
+    AgentQueue --> AgentRunner
+    AgentRunner --> ContextBuilder
+    ContextBuilder --> SessionStore
+
+    %% Tool Service flow
+    AgentRunner -->|Tool Request| ToolRegistry
+    ToolRegistry --> PolicyEngine
+    PolicyEngine -->|Authorized| ToolExecutor
+    ToolExecutor -->|Built-in Tools| ToolService[Bash/Read/Write/Edit/Grep]
+    ToolExecutor -->|Custom Skills| SkillRunner
+
+    %% Skills System flow
+    ToolRegistry --> SkillLoader
+    SkillLoader --> SkillRunner
+    SkillRunner --> MCPAdapter
+
+    %% Session Service flow
+    SessionResolver --> SessionStore
+    SessionResolver --> FileSystem
+
+    %% Storage connections
+    SessionStore --> SQLite
+    ContextBuilder --> SQLite
+    ContextBuilder --> VectorDB
+    AgentRunner --> FileSystem
+
+    %% External connections
+    AgentRunner -->|LLM API| LLMProviders
+    MCPAdapter -->|MCP Protocol| MCPServers
+    EventEmitter -.->|Platform API| Channels
+
+    %% Monitoring connections
+    WSServer -.->|Report| HealthCheck
+    AgentRunner -.->|Log| Logger
+    ToolExecutor -.->|Track| Metrics
+    HealthCheck --> Logger
+    Logger --> FileSystem
+
+    %% Styling
+    classDef clientStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:3px
+    classDef gatewayStyle fill:#d3f9d8,stroke:#2f9e44,stroke-width:3px
+    classDef backendStyle fill:#e5dbff,stroke:#5f3dc4,stroke-width:3px
+    classDef storageStyle fill:#fff4e6,stroke:#e67700,stroke-width:3px
+    classDef externalStyle fill:#ffe8cc,stroke:#d9480f,stroke-width:3px
+    classDef monitoringStyle fill:#f3d9fa,stroke:#862e9c,stroke-width:3px
+    classDef serviceStyle fill:#c5f6fa,stroke:#0c8599,stroke-width:2px
+
+    class TUI,CLI,MacApp clientStyle
+    class WSServer,HTTPServer,ConnHandler,MsgHandler,EventEmitter,OpenResponsesAPI,ToolsAPI,OpenAIAPI gatewayStyle
+    class AgentCmd,AgentRunner,AgentQueue,SessionStore,SessionResolver,ContextBuilder,ToolRegistry,PolicyEngine,ToolExecutor,SkillLoader,SkillRunner,MCPAdapter backendStyle
+    class SQLite,FileSystem,VectorDB storageStyle
+    class LLMProviders,MCPServers,Channels externalStyle
+    class HealthCheck,Logger,Metrics monitoringStyle

@@ -1,0 +1,87 @@
+graph TB
+    subgraph clients["HTTP Clients"]
+        WebApp[Web Application]
+        RestClient[REST Client]
+        OpenAIClient[OpenAI SDK]
+    end
+
+    subgraph gateway["HTTP Gateway (Port 18789)"]
+        direction TB
+        Router[HTTP Router]
+        AuthLayer[Authentication Layer]
+
+        subgraph endpoints["API Endpoints"]
+            OpenResponses["/v1/responses<br/>(OpenResponses API)"]
+            ToolsInvoke["/tools/invoke<br/>(Direct Tool Calls)"]
+            OpenAI["/openai/v1/chat/completions<br/>(OpenAI Compatible)"]
+        end
+    end
+
+    subgraph backend["Backend Processing"]
+        direction TB
+        SessionResolver[Session Resolver]
+        AgentRunner[Agent Runner]
+        ToolSystem[Tool System]
+        PolicyEngine[Policy Engine]
+    end
+
+    subgraph providers["External Systems"]
+        LLM[LLM Providers<br/>Anthropic/OpenAI/etc]
+        Tools[Built-in Tools<br/>Bash/Read/Write]
+        Skills[Custom Skills<br/>MCP Servers]
+    end
+
+    %% Client connections
+    WebApp -->|POST /v1/responses| Router
+    RestClient -->|POST /tools/invoke| Router
+    OpenAIClient -->|POST /openai/v1/chat/completions| Router
+
+    %% Router to auth
+    Router --> AuthLayer
+
+    %% Auth to endpoints
+    AuthLayer -->|Bearer Token| OpenResponses
+    AuthLayer -->|Bearer Token| ToolsInvoke
+    AuthLayer -->|Bearer Token| OpenAI
+
+    %% OpenResponses flow
+    OpenResponses -->|1. Parse Request| SessionResolver
+    SessionResolver -->|2. Resolve Agent| AgentRunner
+    AgentRunner -->|3. Stream Events| LLM
+    LLM -.->|4. Tool Request| ToolSystem
+    ToolSystem -->|5. Execute| Tools
+    Tools -.->|6. Result| AgentRunner
+    AgentRunner -->|7. SSE Stream| OpenResponses
+    OpenResponses -->|8. Response| WebApp
+
+    %% Tools Invoke flow
+    ToolsInvoke -->|1. Parse Tool Request| PolicyEngine
+    PolicyEngine -->|2. Validate Policy| ToolSystem
+    ToolSystem -->|3. Execute Tool| Tools
+    ToolSystem -.->|3b. Or Execute Skill| Skills
+    Tools -.->|4. Result| ToolsInvoke
+    Skills -.->|4b. Result| ToolsInvoke
+    ToolsInvoke -->|5. JSON Response| RestClient
+
+    %% OpenAI Compatible flow
+    OpenAI -->|1. Convert Format| SessionResolver
+    SessionResolver -->|2. Resolve Agent| AgentRunner
+    AgentRunner -->|3. Stream Chat| LLM
+    LLM -.->|4. Tool Call| ToolSystem
+    ToolSystem -->|5. Execute| Skills
+    Skills -.->|6. Result| AgentRunner
+    AgentRunner -->|7. Stream Response| OpenAI
+    OpenAI -->|8. OpenAI Format| OpenAIClient
+
+    %% Styling
+    classDef clientStyle fill:#e7f5ff,stroke:#1971c2,stroke-width:2px
+    classDef gatewayStyle fill:#d3f9d8,stroke:#2f9e44,stroke-width:2px
+    classDef backendStyle fill:#e5dbff,stroke:#5f3dc4,stroke-width:2px
+    classDef providerStyle fill:#ffe8cc,stroke:#d9480f,stroke-width:2px
+    classDef endpointStyle fill:#fff4e6,stroke:#e67700,stroke-width:2px
+
+    class WebApp,RestClient,OpenAIClient clientStyle
+    class Router,AuthLayer gatewayStyle
+    class OpenResponses,ToolsInvoke,OpenAI endpointStyle
+    class SessionResolver,AgentRunner,ToolSystem,PolicyEngine backendStyle
+    class LLM,Tools,Skills providerStyle
