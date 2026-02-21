@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Ext as Extension.ts
+    participant Agent as HttpGatewayAgent
+    participant GW as GatewayClientNode
+    participant WS as WebSocket Server
+    participant Auth as Authentication
+
+    Ext->>Agent: run(query)
+    Agent->>GW: new GatewayClientNode(config)
+    Agent->>GW: connect()
+    GW->>WS: WebSocket connection
+    WS-->>GW: Connection established
+    GW->>WS: connect frame {protocol: 3, client: {...}, auth: {token}}
+    WS->>Auth: Validate token
+    Auth-->>WS: Token valid
+    WS-->>GW: hello-ok response {protocol: 3, server: {...}}
+    GW-->>Agent: Connected
+    Agent->>Agent: Yield {type: 'thinking', message: 'Connected'}

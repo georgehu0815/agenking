@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant UI as React UI
+    participant VSCode as useVSCodeMessaging
+    participant Ext as Extension.ts
+    participant Agent as HttpGatewayAgent
+    participant GW as GatewayClientNode
+    participant WS as WebSocket Server
+
+    UI->>VSCode: cancelMessage()
+    VSCode->>Ext: postMessage({type: 'cancelQuery'})
+    Ext->>Ext: abortController.abort()
+    Ext->>Agent: Signal aborted
+    Agent->>GW: abortChat(sessionKey, runId)
+    GW->>WS: req frame {method: 'chat.abort', params: {...}}
+    WS-->>GW: res frame {ok: true}
+    GW->>Agent: Abort complete
+    Agent->>Ext: throw "Aborted"
+    Ext->>VSCode: postMessage({type: 'sessionCancelled'})
+    VSCode->>UI: Mark cancelled

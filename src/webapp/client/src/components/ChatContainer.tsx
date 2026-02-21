@@ -43,10 +43,8 @@ export function ChatContainer() {
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 shadow-lg">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Dexter AI Assistant</h1>
-            <p className="text-sm text-blue-100 mt-1">
-              Powered by Claude · Financial Research & General Q&A
-            </p>
+            <h1 className="text-2xl font-bold">Agentflow AI Assistant</h1>
+            <p className="text-sm text-blue-100 mt-1">Powered by Agentflow</p>
           </div>
           <div className="flex items-center gap-3">
             {isProcessing && (

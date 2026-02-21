@@ -1,0 +1,58 @@
+graph TB
+    subgraph "VS Code Extension"
+        subgraph "Extension Host (Node.js)"
+            EXT[Extension.ts<br/>Main Entry Point]
+            AGENT[HttpGatewayAgent<br/>WebSocket Client]
+            GWCLIENT[GatewayClientNode<br/>Protocol Handler]
+            PROVIDER[WebviewProvider<br/>UI Manager]
+        end
+
+        subgraph "Webview (Browser Context)"
+            UI[React UI<br/>ChatContainer]
+            HOOKS[useAgentStream<br/>State Management]
+            VSCODE[useVSCodeMessaging<br/>Message Passing]
+        end
+    end
+
+    subgraph "Gateway Server"
+        WS[WebSocket Server<br/>:18789]
+        AUTH[Authentication<br/>Token/Device ID]
+        AGENT_SVC[Agent Service<br/>LLM Integration]
+        TOOLS[Tool System<br/>Web Search, etc]
+    end
+
+    subgraph "Configuration"
+        CONFIG[~/.clawdbot/<br/>clawdbot.json]
+        TOKEN[Auth Token<br/>3b34e1a1...]
+    end
+
+    USER[User] -->|Types Query| UI
+    UI -->|postMessage| VSCODE
+    VSCODE -->|VS Code API| PROVIDER
+    PROVIDER -->|sendQuery| EXT
+    EXT -->|run| AGENT
+    AGENT -->|connect/sendChat| GWCLIENT
+    GWCLIENT -->|WebSocket| WS
+    WS -->|Validate| AUTH
+    AUTH -->|Read Token| TOKEN
+    TOKEN -.->|Stored in| CONFIG
+    WS -->|Execute| AGENT_SVC
+    AGENT_SVC -->|Use| TOOLS
+    TOOLS -->|Events| AGENT_SVC
+    AGENT_SVC -->|Stream Events| WS
+    WS -->|WebSocket Frames| GWCLIENT
+    GWCLIENT -->|AgentEvents| AGENT
+    AGENT -->|Yield Events| EXT
+    EXT -->|postMessage| PROVIDER
+    PROVIDER -->|VS Code API| VSCODE
+    VSCODE -->|message event| HOOKS
+    HOOKS -->|Update State| UI
+    UI -->|Display| USER
+
+    style EXT fill:#e1f5ff
+    style AGENT fill:#e1f5ff
+    style GWCLIENT fill:#e1f5ff
+    style UI fill:#fff4e1
+    style HOOKS fill:#fff4e1
+    style WS fill:#e8f5e9
+    style AUTH fill:#ffebee

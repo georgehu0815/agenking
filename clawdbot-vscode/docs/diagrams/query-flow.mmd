@@ -1,0 +1,34 @@
+sequenceDiagram
+    participant UI as React UI
+    participant VSCode as useVSCodeMessaging
+    participant Ext as Extension.ts
+    participant Agent as HttpGatewayAgent
+    participant GW as GatewayClientNode
+    participant WS as WebSocket Server
+    participant LLM as Agent Service
+
+    UI->>VSCode: sendMessage("Hello")
+    VSCode->>Ext: postMessage({type: 'sendQuery', query: 'Hello'})
+    Ext->>Agent: run("Hello")
+    Agent->>GW: sendChat("Hello", sessionKey)
+    GW->>WS: req frame {method: 'chat.send', params: {...}}
+    WS->>LLM: Execute query
+    WS-->>GW: res frame {ok: true, payload: {sessionId}}
+
+    loop Stream Events
+        LLM->>WS: Agent event (thinking, tool_start, etc.)
+        WS->>GW: event frame {event: 'agent', payload: {...}}
+        GW->>Agent: Emit event
+        Agent->>Agent: Map to AgentEvent
+        Agent->>Ext: Yield AgentEvent
+        Ext->>VSCode: postMessage({type: 'agentEvent', event: {...}})
+        VSCode->>UI: Update state
+        UI->>UI: Render event
+    end
+
+    LLM->>WS: Final answer
+    WS->>GW: event frame {state: 'final', answer: '...'}
+    GW->>Agent: Done event
+    Agent->>Ext: Yield {type: 'done', answer: '...'}
+    Ext->>VSCode: postMessage({type: 'agentEvent', event: {type: 'done'}})
+    VSCode->>UI: Mark complete
