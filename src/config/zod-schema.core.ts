@@ -60,7 +60,13 @@ export const ModelProviderSchema = z
     baseUrl: z.string().min(1),
     apiKey: z.string().optional().register(sensitive),
     auth: z
-      .union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")])
+      .union([
+        z.literal("api-key"),
+        z.literal("aws-sdk"),
+        z.literal("oauth"),
+        z.literal("token"),
+        z.literal("managedidentity"),
+      ])
       .optional(),
     api: ModelApiSchema.optional(),
     headers: z.record(z.string(), z.string()).optional(),
@@ -165,7 +171,7 @@ export const MarkdownConfigSchema = z
   .strict()
   .optional();
 
-export const TtsProviderSchema = z.enum(["elevenlabs", "openai", "edge"]);
+export const TtsProviderSchema = z.enum(["elevenlabs", "openai", "edge", "azureopenai"]);
 export const TtsModeSchema = z.enum(["final", "all"]);
 export const TtsAutoSchema = z.enum(["off", "always", "inbound", "tagged"]);
 export const TtsConfigSchema = z
@@ -230,6 +236,18 @@ export const TtsConfigSchema = z
         saveSubtitles: z.boolean().optional(),
         proxy: z.string().optional(),
         timeoutMs: z.number().int().min(1000).max(120000).optional(),
+      })
+      .strict()
+      .optional(),
+    /** Azure OpenAI TTS configuration. */
+    azureopenai: z
+      .object({
+        endpoint: z.string().optional(),
+        apiKey: z.string().optional().register(sensitive),
+        deployment: z.string().optional(),
+        apiVersion: z.string().optional(),
+        voice: z.string().optional(),
+        managedIdentityClientId: z.string().optional(),
       })
       .strict()
       .optional(),

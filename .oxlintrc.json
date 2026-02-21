@@ -24,6 +24,7 @@
   },
   "ignorePatterns": [
     "assets/",
+    "clawdbot-vscode/out/",
     "dist/",
     "docs/_layouts/",
     "extensions/",

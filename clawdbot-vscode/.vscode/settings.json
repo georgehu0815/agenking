@@ -1,0 +1,12 @@
+{
+  // Dexter Extension Configuration
+  //
+  // Agent Mode: 'direct' for lightweight fast queries, 'gateway' for full skill system
+  "dexter.agentMode": "gateway",
+
+  // HTTP Gateway URL (make sure HTTP gateway is running: cd ../dexter && npm run dev)
+  "dexter.gatewayUrl": "http://localhost:3000",
+
+  // Optional: Enable debug logging to see what's happening
+  "dexter.enableDebugLogs": true
+}

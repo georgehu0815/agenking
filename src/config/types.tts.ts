@@ -1,4 +1,4 @@
-export type TtsProvider = "elevenlabs" | "openai" | "edge";
+export type TtsProvider = "elevenlabs" | "openai" | "edge" | "azureopenai";
 
 export type TtsMode = "final" | "all";
 
@@ -72,6 +72,15 @@ export type TtsConfig = {
     saveSubtitles?: boolean;
     proxy?: string;
     timeoutMs?: number;
+  };
+  /** Azure OpenAI TTS configuration. */
+  azureopenai?: {
+    endpoint?: string;
+    apiKey?: string;
+    deployment?: string;
+    apiVersion?: string;
+    voice?: string;
+    managedIdentityClientId?: string;
   };
   /** Optional path for local TTS user preferences JSON. */
   prefsPath?: string;
