@@ -1,5 +1,5 @@
 import type { Api, Model } from "@mariozechner/pi-ai";
-import { discoverAuthStorage, discoverModels } from "@mariozechner/pi-coding-agent";
+import { discoverAuthStorage, discoverModels } from "../pi-model-discovery.js";
 
 import type { ClawdbotConfig } from "../../config/config.js";
 import type { ModelDefinitionConfig } from "../../config/types.js";

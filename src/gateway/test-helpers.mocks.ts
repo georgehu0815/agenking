@@ -231,12 +231,18 @@ vi.mock("@mariozechner/pi-coding-agent", async () => {
   const actual = await vi.importActual<typeof import("@mariozechner/pi-coding-agent")>(
     "@mariozechner/pi-coding-agent",
   );
+  return { ...actual };
+});
 
+vi.mock("../agents/pi-model-discovery.js", async () => {
+  const actual = await vi.importActual<typeof import("../agents/pi-model-discovery.js")>(
+    "../agents/pi-model-discovery.js",
+  );
   return {
     ...actual,
     discoverModels: (...args: unknown[]) => {
       if (!piSdkMock.enabled) {
-        return (actual.discoverModels as (...args: unknown[]) => unknown)(...args);
+        return actual.discoverModels(...(args as Parameters<typeof actual.discoverModels>));
       }
       piSdkMock.discoverCalls += 1;
       return piSdkMock.models;
