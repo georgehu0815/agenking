@@ -36,12 +36,12 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
       execute: async (
         toolCallId,
         params,
+        signal: AbortSignal | undefined,
         onUpdate: AgentToolUpdateCallback<unknown> | undefined,
         _ctx,
-        signal?: AbortSignal,
       ): Promise<AgentToolResult<unknown>> => {
-        // ToolDefinition.execute order (pi-coding-agent v0.49.3): toolCallId, params, onUpdate, ctx, signal
-        // AgentTool.execute order (pi-agent-core v0.49.3):        toolCallId, params, signal, onUpdate
+        // ToolDefinition.execute order (pi-coding-agent v0.54.0): toolCallId, params, signal, onUpdate, ctx
+        // AgentTool.execute order (pi-agent-core v0.54.0):        toolCallId, params, signal?, onUpdate?
         try {
           return await tool.execute(toolCallId, params, signal, onUpdate);
         } catch (err) {
@@ -83,9 +83,9 @@ export function toClientToolDefinitions(
       execute: async (
         toolCallId,
         params,
+        _signal: AbortSignal | undefined,
         _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
         _ctx,
-        _signal?: AbortSignal,
       ): Promise<AgentToolResult<unknown>> => {
         // Notify handler that a client tool was called
         if (onClientToolCall) {

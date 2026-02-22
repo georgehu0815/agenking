@@ -2,7 +2,7 @@
   "name": "clawdbot-vscode-ws",
   "displayName": "clawdbot AI Assistant",
   "description": "AI agent as workmate",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "publisher": "georgehu",
   "repository": "https://github.com/georgehu/dexter",

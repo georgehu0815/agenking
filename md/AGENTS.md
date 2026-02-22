@@ -1,6 +1,43 @@
 # Repository Guidelines
 - Repo: https://github.com/clawdbot/clawdbot
 - GitHub issues/comments/PR comments: use literal multiline strings or `-F - <<'EOF'` (or $'...') for real newlines; never embed "\\n".
+zureopenai/gpt-5.2
+Starting gateway in background...
+✓ Gateway started successfully!
+  PID: 27942
+  Logs: /Users/ghu/.clawdbot/logs/gateway.log
+  Errors: /Users/ghu/.clawdbot/logs/gateway.err.log
+
+To view logs in real-time:
+  tail -f /Users/ghu/.clawdbot/logs/gateway.log
+
+To stop the gateway:
+  pnpm clawdbot gateway stop
+  or kill 27942
+
+> clawdbot@2026.1.25 clawdbot /Users/ghu/aiworker/clawdbot
+> node scripts/run-node.mjs gateway --force
+
+2026-02-22T03:12:42.303Z [gateway] force: no listeners on port 18789
+2026-02-22T03:12:43.970Z [gateway] [plugins] memory slot plugin not found or not marked as memory: memory-core
+2026-02-22T03:12:43.978Z [canvas] host mounted at http://127.0.0.1:18789/__clawdbot__/canvas/ (root /Users/ghu/clawd/canvas)
+2026-02-22T03:12:44.366Z [heartbeat] started
+2026-02-22T03:12:44.368Z [gateway] agent model: azureopenai/gpt-5.2
+2026-02-22T03:12:44.368Z [gateway] listening on ws://127.0.0.1:18789 (PID 27969)
+2026-02-22T03:12:44.369Z [gateway] listening on ws://[::1]:18789
+2026-02-22T03:12:44.370Z [gateway] log file: /tmp/clawdbot/clawdbot-2026-02-21.log
+2026-02-22T03:12:44.386Z [browser/server] Browser control listening on http://127.0.0.1:18791/
+2026-02-22T03:12:44.399Z Registered hook: boot-md -> gateway:startup
+2026-02-22T03:12:44.401Z Registered hook: command-logger -> command
+2026-02-22T03:12:44.402Z Registered hook: session-memory -> command:new
+2026-02-22T03:12:44.403Z Registered hook: soul-evil -> agent:bootstrap
+2026-02-22T03:12:44.405Z [hooks] loaded 4 internal hook handlers
+2026-02-22T03:12:44.414Z [whatsapp] [default] starting provider (+13522355298)
+2026-02-22T03:12:44.418Z [voice-call] Webhook server listening on http://127.0.0.1:3334/voice/webhook
+2026-02-22T03:12:44.420Z [gateway] [voice-call] Runtime initialized
+2026-02-22T03:12:44.420Z [gateway] [voice-call] Webhook URL: http://127.0.0.1:3334/voice/webhook
+2026-02-22T03:12:45.265Z [telegram] [default] starting provider (@codeagent2026bot)
+2026-02-22T03:12:45.468Z [whatsapp] Listening for personal WhatsApp inbound messages.
 
 ## Project Structure & Module Organization
 - Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/provider-web.ts`, infra in `src/infra`, media pipeline in `src/media`).
