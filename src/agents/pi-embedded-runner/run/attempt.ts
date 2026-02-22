@@ -452,6 +452,7 @@ export async function runEmbeddedAttempt(
         modelRegistry: params.modelRegistry,
         model: params.model,
         thinkingLevel: mapThinkingLevel(params.thinkLevel),
+        // @ts-expect-error -- systemPrompt removed from CreateAgentSessionOptions in pi-coding-agent v0.54.0 but accepted at runtime
         systemPrompt,
         tools: builtInTools,
         customTools: allCustomTools,

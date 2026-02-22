@@ -3,7 +3,9 @@
 
 # Exit on error
 set -e
+export CLAWDBOT_STATE_DIR="$HOME/.openclaw"
 export MCP_SERVER_URL=http://localhost:3333/sse
+echo "Using CLAWDBOT_STATE_DIR: $CLAWDBOT_STATE_DIR"
 echo "Using MCP_SERVER_URL: $MCP_SERVER_URL"
 # Colors for output
 GREEN='\033[0;32m'
@@ -12,7 +14,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Log directory
-LOG_DIR="${HOME}/.clawdbot/logs"
+LOG_DIR="${CLAWDBOT_STATE_DIR:-$HOME/.openclaw}/logs"
 mkdir -p "$LOG_DIR"
 
 # Log files

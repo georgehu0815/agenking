@@ -64,7 +64,9 @@ export function createClackPrompter(): WizardPrompter {
           message: stylePromptMessage(params.message),
           initialValue: params.initialValue,
           placeholder: params.placeholder,
-          validate: params.validate,
+          validate: params.validate
+            ? (value: string | undefined) => params.validate!(value ?? "")
+            : undefined,
         }),
       ),
     confirm: async (params) =>

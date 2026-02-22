@@ -166,7 +166,8 @@ npm run package                # Create .vsix file
 ## Next Steps
 
 ### For Users
-- Install locally: `code --install-extension dexter-vscode-1.0.0.vsix`
+- Install locally: `code --install-extension /Users/ghu/aiworker/clawdbot/clawdbot-vscode/clawdbot-vscode-ws-1.0.1.vsix`
+code --install-extension clawdbot-vscode-ws-1.0.1.vsix
 - Configure settings: Search "Dexter" in VS Code settings
 - Try different queries: Financial research, code questions, web search
 
