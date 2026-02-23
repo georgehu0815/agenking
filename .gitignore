@@ -1,4 +1,5 @@
 node_modules
+*.vsix
 **/node_modules/
 .env
 docker-compose.extra.yml
